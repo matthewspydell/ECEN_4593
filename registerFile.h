@@ -1,21 +1,21 @@
 // Register File Mappings
 
 // 32 Registers, each 32 bits wide
-uint32_t R[31] = {0};
+uint32_t R[31];
 
 #define $zero R[0]
 
-// Values for Func Results
+// Values for function results
 #define $v0 R[2]
 #define $v1 R[3]
 
-// Arguments
+// Arguments for functions
 #define $a0 R[4]
 #define $a1 R[5]
 #define $a2 R[6]
 #define $a3 R[7]
 
-// Temporaries
+// Temporary registers
 #define $t0 R[8]
 #define $t1 R[9]
 #define $t2 R[10]
@@ -27,7 +27,7 @@ uint32_t R[31] = {0};
 #define $t8 R[24]
 #define $t9 R[25]
 
-// Saved Temporaries
+// Saved registers
 #define $s0 R[16]
 #define $s1 R[17]
 #define $s2 R[18]
