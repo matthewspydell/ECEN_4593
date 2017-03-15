@@ -4,34 +4,34 @@
 
 void instructionDecode(int* instruction) {
   /* R-format instruction masks */
-  int opcodeMask = 0xFC000000;
-  int rsMask = 0x03E00000;
-  int rtMask = 0x001F0000;
-  int rdMask = 0x0000F800;
-  int shamtMask = 0x000007C0;
-  int functMask = 0x0000003F;
-  
+  uint32_t opcodeMask = 0xFC000000;
+  uint32_t rsMask = 0x03E00000;
+  uint32_t rtMask = 0x001F0000;
+  uint32_t rdMask = 0x0000F800;
+  uint32_t shamtMask = 0x000007C0;
+  uint32_t functMask = 0x0000003F;
+
   /* I-format additional instruction mask */
-  int immMask = 0x0000FFFF;
-  
+  uint32_t immMask = 0x0000FFFF;
+
   /* J-format additional instruction mask */
-  int addMask = 0x03FFFFFF;
-  
-  opcodeRegister = (*instruction & opcodeMask)>>26;
-  
+  uint32_t addMask = 0x03FFFFFF;
+
+  ID_EX.opcodeShadow = (*instruction & opcodeMask)>>26;
+
   /* instruction format is determined by opcode */
-  if (opcodeRegister == 0) {
-    rsRegister = (*instruction & rsMask)>>21;
-    rtRegister = (*instruction & rtMask)>>16;
-    rdRegister = (*instruction & rdMask)>>11;
-    shamt = (*instruction & shamtMask)>>6;
-    funct = (*instruction & functMask);
-  } else if (opcodeRegister == 0x2 || opcodeRegister == 0x3) {
-    address = (*instruction & addMask);  
+  if (ID_EX.opcodeShadow == 0) {
+    ID_EX.rsShadow = (*instruction & rsMask)>>21;
+    ID_EX.rtShadow = (*instruction & rtMask)>>16;
+    ID_EX.rdShadow = (*instruction & rdMask)>>11;
+    ID_EX.shamtShadow = (*instruction & shamtMask)>>6;
+    ID_EX.functShadow = (*instruction & functMask);
+  } else if (ID_EX.opcodeShadow == 0x2 || ID_EX.opcodeShadow == 0x3) {
+    ID_EX.addressShadow = (*instruction & addMask);
   } else {
-    rsRegister = (*instruction & rsMask)>>21;
-    rdRegister = (*instruction & rtMask)>>16; //rd is rt for I-format instructions
-    imm = (*instruction & immMask);
+    ID_EX.rsShadow = (*instruction & rsMask)>>21;
+    ID_EX.rdShadow = (*instruction & rtMask)>>16; //rd is rt for I-format instructions
+    ID_EX.immShadow = (*instruction & immMask);
   }
-  
+
 }
