@@ -1,7 +1,7 @@
 // Register File Mappings
 
 // 32 Registers, each 32 bits wide
-uint32_t R[31];
+int R[31];
 
 #define $zero R[0]
 

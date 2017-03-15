@@ -1,15 +1,16 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "registers.h"
-//#include "functions.h"
 
+#include "registerFile.h"
+#include "pipelineRegisters.h"
+#include "instructionDecode.h"
 
 // Memory
 uint32_t memory[];          // words differ by 4 bytes
 
 // $pc points to first memory address
-uint32_t * $pc = memory;
+uint32_t* $pc = memory;
 
 
 // Masks for decode
