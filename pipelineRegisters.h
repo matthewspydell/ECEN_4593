@@ -3,17 +3,19 @@
  * pipeline registers IF/ID, ID/EX, EX/MEM, and MEM/WB
  */
 
-#ifndef PIPEREG_H
-#define PIPEREG_H
+#ifndef pipelineRegisters_h
+#define pipelineRegisters_h
 
 /* instruction-fetch | instruction-decode register */
-struct IF_ID {
+struct IFID {
     uint32_t instructionShadow;
     uint32_t instruction;
 };
+// create and initialize IF/ID pipeline register
+struct IFID IF_ID = {};
 
 /* instruction-decode | execute register */
-struct ID_EX {
+struct IDEX {
     uint32_t opcodeShadow;
     uint32_t rsShadow;
     uint32_t rtShadow;
@@ -29,9 +31,11 @@ struct ID_EX {
     uint32_t funct;
     uint32_t imm;
 };
+// create and initialize ID/EX pipeline register
+struct IDEX ID_EX = {};
 
 /* execute | memory register */
-struct EX_MEM {
+struct EXMEM {
     uint32_t rdShadow;
     uint32_t aluOutputShadow;
     uint32_t addressShadow;
@@ -39,9 +43,11 @@ struct EX_MEM {
     uint32_t aluOutput;
     uint32_t address;
 };
+// create and initialize EX/MEM pipeline register
+struct EXMEM EX_MEM = {};
 
 /* memory | write-back register */
-struct MEM_WB {
+struct MEMWB {
     uint32_t rdShadow;
     uint32_t aluOutputShadow;
     uint32_t addressOutputShadow;
@@ -49,5 +55,7 @@ struct MEM_WB {
     uint32_t aluOutput;
     uint32_t addressOut;
 };
+// create and initialize MEM_WB pipeline register
+struct MEMWB MEM_WB = {};
 
-#endif PIPEREG_H
+#endif pipelineRegisters_h
