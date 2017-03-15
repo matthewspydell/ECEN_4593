@@ -1,21 +1,25 @@
 // Register File Mappings
 
-// 32 Registers, each 32 bits wide
+// program counter register setup
+uint32_t* pc;
+#define $pc pc
+
+// 32 registers, each 32 bits wide
 int R[31];
 
 #define $zero R[0]
 
-// Values for function results
+// values for function results
 #define $v0 R[2]
 #define $v1 R[3]
 
-// Arguments
+// arguments
 #define $a0 R[4]
 #define $a1 R[5]
 #define $a2 R[6]
 #define $a3 R[7]
 
-// Temporary registers
+// temporary registers
 #define $t0 R[8]
 #define $t1 R[9]
 #define $t2 R[10]
@@ -27,7 +31,7 @@ int R[31];
 #define $t8 R[24]
 #define $t9 R[25]
 
-// Saved registers
+// saved registers
 #define $s0 R[16]
 #define $s1 R[17]
 #define $s2 R[18]
@@ -37,14 +41,14 @@ int R[31];
 #define $s6 R[22]
 #define $s7 R[23]
 
-// Global Pointer
+// global Pointer
 #define $gp R[28]
 
-// Stack Pointer
+// stack Pointer
 #define $sp R[29]
 
-// Frame Pointer
+// frame Pointer
 #define $fp R[30]
 
-// Return Address
+// return Address
 #define $ra R[31]
