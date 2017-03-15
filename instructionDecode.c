@@ -4,7 +4,7 @@
 
 #include "instructionDecode.h"
 
-void instructionDecode(int* instruction) {
+void instructionDecode() {
 
   ID_EX.opcodeShadow = (*instruction & opcodeMask)>>26;
 
