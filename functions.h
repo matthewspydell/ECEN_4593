@@ -83,7 +83,8 @@ void decode( )
 
 // lhu
     case 0x25   :
-
+
+
 // lw
     case 0x23   :
 
@@ -144,7 +145,391 @@ void decode( )
 default:    // exception for unrecognized instruction!
 
 
+    }
 }
+
+void ALU()
+{
+    int32_t lo = 0;
+    int32_t hi = 0;
+
+    uint32_t lou = 0;
+    uint32_t hiu = 0;
+
+
+    //  add
+    //  add with overflow
+    //  opcode: 0   function: 0x20
+    R[currentInst.rd]= R[currentInst.rs]+R[currentInst.rt];
+
+    //  addu
+    //  addition without overflow
+    //  opcode: 0   function: 0x21
+    R[currentInst.rd]= R[currentInst.rs]+R[currentInst.rt];
+
+    //  addi
+    //  add immediate with overflow
+    //  opcode: 8
+    R[currentInst.rt]= R[currentInst.rs]+ currentInst.iImm;
+
+    // addiu
+    // add immediate without overflow
+    // opcode:  9
+    R[currentInst.rt]= R[currentInst.rs]+ currentInst.iImm;
+
+    //  and
+    //  logical AND
+    //  opcode: 0   function: 0x24
+    R[currentInst.rd]= R[currentInst.rs] && R[currentInst.rt];
+
+    //  andi
+    //  AND immediate
+    //  opcode: 0xc
+    R[currentInst.rt]= R[currentInst.rs] && currentInst.iImm ;
+
+    //  clo
+    //  Count leading ones
+    //  opcode: 0x1c    function: 0x21
+    uint32_t temp = ~(R[currentInst.rs]);
+    R[currentInst.rd] = __builtin_clz(temp);
+
+    //  clz
+    //  count leading zeroes
+    //  opcode: 0x1c    function: 0x20
+    R[currentInst.rd] = __builtin_clz(R[currentInst.rs]);
+
+    // div
+    // divide with overflow
+    // opcode:  0   function: 0x1a
+    lo = R[currentInst.rs]/R[currentInst.rt];
+    hi = R[currentInst.rs] % R[currentInst.rt];
+
+    //  divu
+    //  divide without oveflow
+    //  opcode: 0   function:0x1b
+    lou = R[currentInst.rs]/R[currentInst.rt];
+    hiu = R[currentInst.rs] % R[currentInst.rt];
+
+    // mult
+    // multiply signed
+    //  opcode: 0   function:0x18
+    int64_t result = R[currentInst.rs]*R[currentInst.rt];
+    lo = result;
+    hi = (result>>32);
+
+
+    // multu
+    // unsigned multiply
+    //  opcode: 0   function:0x19
+    uint64_t result = R[currentInst.rs]*R[currentInst.rt];
+    lou = result;
+    hiu = (result>>32);
+
+    // mul
+    // multiply without overflow
+    //  opcode: 0x1c    function: 2
+    R[currentInst.rd] = R[currentInst.rs]*R[currentInst.rt];
+
+    // madd
+    // multiply add
+    //  opcode: 0x1c    function: 0
+    int64_t result = R[currentInst.rs]*R[currentInst.rt];
+    int64_t concat = hi;
+    concat << 32;
+    concat = concat+lo;
+    result += concat;
+
+    // maddu
+    // unsigned multiply add
+    //  opcode: 0x1c    function: 1
+    uint64_t result = R[currentInst.rs]*R[currentInst.rt];
+    uint64_t concat = hiu;
+    concat << 32;
+    concat = concat+lou;
+    result += concat;
+
+    // msub
+    // multiply subtract signed
+    //  opcode: 0x1c    function: 4
+    int64_t result = R[currentInst.rs]*R[currentInst.rt];
+    int64_t concat = hi;
+    concat << 32;
+    concat = concat+lo;
+    result -= concat;
+
+    // nor
+    // logical NOR
+    // opcode:  0   function: 0x27
+    R[currentInst.rd] = !(R[currentInst.rs] || R[currentInst.rt]);
+
+    // or
+    // logical OR
+    // opcode:  0   function: 0x25
+    R[currentInst.rd] = R[currentInst.rs] || R[currentInst.rt] ;
+
+    // ori
+    // logical OR immediate
+    // opcode:  0xd
+    R[currentInst.rt]= R[currentInst.rs] | currentInst.iImm;
+
+    // sll
+    // shift left logical
+    //  opcode: 0   function: 0
+    R[currentInst.rd]= R[currentInst.rt] << currentInst.shamt;
+
+    // sllv
+    // shift left variable
+    //  opcode: 0   function: 4
+    R[currentInst.rd]= R[currentInst.rt] << R[currentInst.rs];
+
+    // sra
+    // shift right arithmetic
+    // opcode:  0   function: 3
+    R[currentInst.rd]= R[currentInst.rt] >> currentInst.shamt;
+
+    // srav
+    // shift right variable arithmetic
+    //  opcode: 0   function: 7
+    R[currentInst.rd]= R[currentInst.rt] >> R[currentInst.rs];
+
+    // srl
+    // shift right logical
+    //  opcode: 0   function: 2
+    R[currentInst.rd]= R[currentInst.rt] >> currentInst.shamt;
+
+    // srlv
+    // shift right logical variable
+    //  opcode: 0   function: 6
+    R[currentInst.rd]= R[currentInst.rt] >> R[currentInst.rs];
+
+    // sub
+    // subtract with overflow
+    //  opcode: 0   function: 0x22
+    R[currentInst.rd]= R[currentInst.rs]-R[currentInst.rt];
+
+    //  subu
+    //  subtract without overflow
+    //  opcode: 0   function: 0x23
+    R[currentInst.rd]= R[currentInst.rs]-R[currentInst.rt];
+
+    // xor
+    // logical xor
+    //  opcode: 0   function: 0x26
+    R[currentInst.rd] = (R[currentInst.rs] != R[currentInst.rt]);
+
+    // xori
+    // logical xor immediate
+    //  opcode: 0xe
+    R[currentInst.rd] = (R[currentInst.rs] != currentInst.iImm);
+
+    // lui
+    // load upper immediate
+    //  opcode: 0xf
+    R[currentInst.rt] = (currentInst.iImm << 16) ;
+
+    // slt
+    // set less than
+    //  opcode: 0   function: 0x2a
+    R[currentInst.rd] = (R[currentInst.rs] < R[currentInst.rt]) ? 1 : 0 ;
+
+    //  sltu
+    //  set less than unsigned
+    //  opcode: 0   function: 0x2b
+    R[currentInst.rd] = (R[currentInst.rs] < R[currentInst.rt]) ? 1 : 0 ;
+
+    // slti
+    // set less than immediate
+    //  opcode: 0xa
+    R[currentInst.rd] = (R[currentInst.rs] < currentInst.iImm) ? 1 : 0 ;
+
+    // sltiu
+    // set less than unsigned immediate
+    //  opcode: 0xb
+    R[currentInst.rd] = (R[currentInst.rs] < R[currentInst.rt]) ? 1 : 0 ;
+
+    // bclf
+    // branch coprocessor false
+
+    // bclt
+    //  branch coprocessor true
+
+    // beq
+    // branch on equal
+    //  opcode: 4
+    if( R[currentInst.rs] == R[currentInst.rt])
+        $pc += (currentInst.iImm << 2);
+    else
+        $pc += 4;
+
+    //  bgez
+    //  branch on greater than equal zero
+    //  opcode: 1
+    if( R[currentInst.rs] >= 0)
+        $pc += (currentInst.iImm << 2);
+    else
+        $pc += 4;
+
+    //  bgezal
+    //  branch on greater than equal zero and link
+    //  if rs greater than or equal to 0. Save address of next instruction in register 31
+    //  opcode: 1
+    if( R[currentInst.rs] >= 0)
+        $pc += (currentInst.iImm << 2);
+        R[31] = $pc+4;
+    else
+        $pc += 4;
+
+    //  bgtz
+    //  Branch on greater than zero
+    //  opcode: 7
+    if( R[currentInst.rs] > 0)
+        $pc += (currentInst.iImm << 2);
+    else
+        $pc += 4;
+
+    //  blez
+    //  Branch on less than equal zero
+    //  opcode: 6
+    if( R[currentInst.rs] <= 0)
+        $pc += (currentInst.iImm << 2);
+    else
+        $pc += 4;
+
+    //  bltzal
+    //  branch on less than and link
+    //  opcode: 1
+    if( R[currentInst.rs] < 0)
+        $pc += (currentInst.iImm << 2);
+        R[31] = $pc+4;
+    else
+        $pc += 4;
+
+    //  bltz
+    //  branch on less than zero
+    //  opcode: 1
+    if( R[currentInst.rs] < 0)
+        $pc += (currentInst.iImm << 2);
+    else
+        $pc += 4;
+
+    //  bne
+    //  branch on not equal
+    //  opcode: 5
+    if( R[currentInst.rs] != R[currentInst.rt])
+        $pc += (currentInst.iImm << 2);
+    else
+        $pc += 4;
+
+    //  j
+    //  jump
+    //  opcode: 2
+    $pc = ($pc & 0xf0000000) | (currentInst.jImm << 2);
+
+    //  jal
+    //  jump and link
+    //  opcode: 3
+    $pc = ($pc & 0xf0000000) | (currentInst.jImm << 2);
+    R[31] = $pc+4;
+
+    //  jalr
+    //  jump and link register
+    //  opcode: 0   function: 9
+    $pc = ($pc & 0xf0000000) | (currentInst.jImm << 2);
+    R[currentInst.rd] = $pc+4;
+
+    //  jr
+    //  jump register
+    //  opcode: 0   function:   8
+    $pc = R[currentInst.rs];
+
+    //  teq
+    //  Trap if equal
+    //  opcode: 0   function:   0x34
+
+
+    //  teqi
+    //  Trap if equal immediate
+    //  opcode: 1
+
+    //  teq
+    //  Trap if not equal
+    //  opcode: 0   function:   0x36
+
+    //  teqi
+    //  Trap if not equal immediate
+    //  opcode: 1
+
+    //  tge
+    //  trap if greater equal
+    //  opcode: 1   function:   0x30
+
+    //  tgeu
+    //  unsigned trap if greater equal
+    //  opcode: 1   function:   0x31
+
+    //  tgei
+    //  trap if greater equal immediate
+    //  opcode: 1
+
+    // tgeiu
+    //  unsigned trap if greater equal immediate
+    //  opcode: 1
+
+    //  tlt
+    //  trap if less than
+    //  opcode: 0   function:   0x32
+
+    //  tltu
+    //  unsigned trap if less than
+    //  opcode: 0   function:   0x33
+
+    // tlti
+    // trap if less than immediate
+    //  opcode: 1
+
+    //  tltiu
+    //  unsigned trap if less than immediate
+    //  opcode:1
+
+    //  lb
+    //  load byte
+    //  opcode: 0x20
+    R[currentInst.rt] = (memory[ R[currentInst.rs] + currentInst.iImm]) & 0x000000ff;
+    $pc = $pc+4;
+
+    //  lbu
+    //  load unsigned byte
+    //  opcode: 0x24
+    R[currentInst.rt] = (memory[ R[currentInst.rs] + currentInst.iImm]) & 0x000000ff;
+    $pc = $pc+4;
+
+    //  lh
+    //  load halfword
+    //  opcode: 0x21
+    R[currentInst.rt] = (memory[ R[currentInst.rs] + currentInst.iImm]) & 0x0000ffff;
+    $pc = $pc+4;
+
+    //  lhu
+    //  load unsigned halfword
+    //  opcode: 0x25
+    R[currentInst.rt] = (memory[ R[currentInst.rs] + currentInst.iImm]) & 0x0000ffff;
+    $pc = $pc+4;
+
+    //  lw
+    //  load word
+    //  opcode: 0x23
+    R[currentInst.rt] = (memory[ R[currentInst.rs] + currentInst.iImm]) ;
+    $pc = $pc+4;
+
+    //  lwcl
+    //  load word coprocessor 1
+    //  opcode: 0x31
+
+    //  lwl
+    //  load word left
+    //  opcode: 0x22
 
 
 }
+
+
