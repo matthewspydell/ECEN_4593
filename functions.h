@@ -345,12 +345,6 @@ void ALU()
     //  opcode: 0xb
     R[currentInst.rd] = (R[currentInst.rs] < R[currentInst.rt]) ? 1 : 0 ;
 
-    // bclf
-    // branch coprocessor false
-
-    // bclt
-    //  branch coprocessor true
-
     // beq
     // branch on equal
     //  opcode: 4
@@ -527,10 +521,6 @@ void ALU()
     R[currentInst.rt] = (memory[ R[currentInst.rs] + currentInst.iImm]) ;
 
 
-    //  lwcl
-    //  load word coprocessor 1
-    //  opcode: 0x31
-
     //  lwl
     //  load word left
     //  opcode: 0x22
@@ -563,13 +553,6 @@ void ALU()
     // opcode: 0x2b
     // whole instruction: memory[R[currentInst.rs] + currentInst.iImm] = R[currentInst.rt];
 
-    // swcl
-    // store word coprocessor 1
-    // opcode: 0x31
-
-    // sdcl
-    // store double coprocessor 1
-    // opcode: 0x3d
 
     // swl
     // store word left
