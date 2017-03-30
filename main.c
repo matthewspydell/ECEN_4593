@@ -5,12 +5,14 @@
 
 
 // Register File
-uint32_t R[31] = {0};
+// R[0] always zero
+// Can contain signed numbers in registers
+int32_t R[31] = {0};
 
 
 
 // Memory
-uint32_t memory[];          // words differ by 4 bytes
+uint32_t memory[];          // words differ by 4 bytes, byte addressed, big endian
 
 // $pc points to first memory address
 uint32_t * $pc = memory;
@@ -40,7 +42,7 @@ struct instruction {
    uint32_t rd;
    uint32_t shamt;
    uint32_t func;
-   uint32_t iImm;
+   int32_t iImm;
    uint32_t jImm;
    bool Rform;
    bool Iform;
@@ -217,10 +219,54 @@ printf("\n");
 
 }
 
+void next_cycle()
+{
+    $pc+4;
+}
+
+// only occurs for I format ?
+int32_t sign_ext(int16_t value)
+{
+   int32_t new_immediate = value;
+     printf("%x\n",value);
+
+   // positive sign bit
+   if(((new_immediate >> 16)& 0x0000000F)== 0)
+   {
+
+       printf("sign bit equals 0\n");
+       // set upper bits to 0's
+       new_immediate = (new_immediate & 0x0000FFFF);
+       printf("%x\n",new_immediate);
+       return new_immediate;
+   }
+
+   // only leave sign bit, negative sign bit case
+   else if ((((!new_immediate) >> 16)& 0x0000000F) == 0)
+   {
+       printf("sign bit equals 1\n");
+       // set upper bits to 1's
+       new_immediate = (new_immediate | 0xFFFF0000);
+       printf("%x\n",new_immediate);
+       return new_immediate;
+   }
+
+   else
+   {
+       printf("Error in sign extension.");
+       exit(0);
+   }
+
+}
+
 
 
 int main()
 {
+   // int16_t test = 0x8000;
+
+   // printf("%x",test);
+
     memory[0] = 0x00af8020;
     decode();
 
@@ -230,6 +276,9 @@ int main()
      R[currentInst.rd] = (R[currentInst.rs] < R[currentInst.rt]) ? 1 : 0 ;
 
      printf("%d", R[currentInst.rd]);
+
+//sign_ext(test);
+
 
 
     return 0;
