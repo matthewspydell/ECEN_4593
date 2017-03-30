@@ -155,47 +155,51 @@ void ALU()
 
     uint32_t lou = 0;
     uint32_t hiu = 0;
+    
+    uint32_t math_result = 0;
+    uint32_t mem_addr = 0;
+    uint32_t branch_target = 0;
 
 
     //  add
     //  add with overflow
     //  opcode: 0   function: 0x20
-    R[currentInst.rd]= R[currentInst.rs]+R[currentInst.rt];
+    math_result = R[currentInst.rs]+R[currentInst.rt];
 
     //  addu
     //  addition without overflow
     //  opcode: 0   function: 0x21
-    R[currentInst.rd]= R[currentInst.rs]+R[currentInst.rt];
+    math_result = R[currentInst.rs]+R[currentInst.rt];
 
     //  addi
     //  add immediate with overflow
     //  opcode: 8
-    R[currentInst.rt]= R[currentInst.rs]+ currentInst.iImm;
+    math_result = R[currentInst.rs]+ currentInst.iImm;
 
     // addiu
     // add immediate without overflow
     // opcode:  9
-    R[currentInst.rt]= R[currentInst.rs]+ currentInst.iImm;
+    math_result = R[currentInst.rs]+ currentInst.iImm;
 
     //  and
     //  opcode: 0   function: 0x24
-    R[currentInst.rd]= R[currentInst.rs] & R[currentInst.rt];
+    math_result = R[currentInst.rs] & R[currentInst.rt];
 
     //  andi
     //  AND immediate
     //  opcode: 0xc
-    R[currentInst.rt]= R[currentInst.rs] & currentInst.iImm ;
+    math_result = R[currentInst.rs] & currentInst.iImm ;
 
     //  clo
     //  Count leading ones
     //  opcode: 0x1c    function: 0x21
     uint32_t temp = ~(R[currentInst.rs]);
-    R[currentInst.rd] = __builtin_clz(temp);
+    math_result = __builtin_clz(temp);
 
     //  clz
     //  count leading zeroes
     //  opcode: 0x1c    function: 0x20
-    R[currentInst.rd] = __builtin_clz(R[currentInst.rs]);
+    math_result = __builtin_clz(R[currentInst.rs]);
 
     // div
     // divide with overflow
@@ -227,7 +231,7 @@ void ALU()
     // mul
     // multiply without overflow
     //  opcode: 0x1c    function: 2
-    R[currentInst.rd] = R[currentInst.rs]*R[currentInst.rt];
+    math_result = R[currentInst.rs]*R[currentInst.rt];
 
     // madd
     // multiply add
@@ -258,66 +262,66 @@ void ALU()
 
     // nor
     // opcode:  0   function: 0x27
-    R[currentInst.rd] = !(R[currentInst.rs] | R[currentInst.rt]);
+    math_result = !(R[currentInst.rs] | R[currentInst.rt]);
 
     // or
     // opcode:  0   function: 0x25
-    R[currentInst.rd] = R[currentInst.rs] | R[currentInst.rt] ;
+    math_result = R[currentInst.rs] | R[currentInst.rt] ;
 
     // ori
     // logical OR immediate
     // opcode:  0xd
-    R[currentInst.rt]= R[currentInst.rs] | currentInst.iImm;
+    math_result = R[currentInst.rs] | currentInst.iImm;
 
     // sll
     // shift left logical
     //  opcode: 0   function: 0
-    R[currentInst.rd]= R[currentInst.rt] << currentInst.shamt;
+    math_result = R[currentInst.rt] << currentInst.shamt;
 
     // sllv
     // shift left variable
     //  opcode: 0   function: 4
-    R[currentInst.rd]= R[currentInst.rt] << R[currentInst.rs];
+    math_result = R[currentInst.rt] << R[currentInst.rs];
 
     // sra
     // shift right arithmetic
     // opcode:  0   function: 3
-    R[currentInst.rd]= R[currentInst.rt] >> currentInst.shamt;
+    math_result = R[currentInst.rt] >> currentInst.shamt;
 
     // srav
     // shift right variable arithmetic
     //  opcode: 0   function: 7
-    R[currentInst.rd]= R[currentInst.rt] >> R[currentInst.rs];
+    math_result = R[currentInst.rt] >> R[currentInst.rs];
 
     // srl
     // shift right logical
     //  opcode: 0   function: 2
-    R[currentInst.rd]= R[currentInst.rt] >> currentInst.shamt;
+    math_result = R[currentInst.rt] >> currentInst.shamt;
 
     // srlv
     // shift right logical variable
     //  opcode: 0   function: 6
-    R[currentInst.rd]= R[currentInst.rt] >> R[currentInst.rs];
+    math_result = R[currentInst.rt] >> R[currentInst.rs];
 
     // sub
     // subtract with overflow
     //  opcode: 0   function: 0x22
-    R[currentInst.rd]= R[currentInst.rs]-R[currentInst.rt];
+    math_result = R[currentInst.rs]-R[currentInst.rt];
 
     //  subu
     //  subtract without overflow
     //  opcode: 0   function: 0x23
-    R[currentInst.rd]= R[currentInst.rs]-R[currentInst.rt];
+    math_result = R[currentInst.rs]-R[currentInst.rt];
 
     // xor
     // logical xor
     //  opcode: 0   function: 0x26
-    R[currentInst.rd] = (R[currentInst.rs] != R[currentInst.rt]);
+    math_result = (R[currentInst.rs] != R[currentInst.rt]);
 
     // xori
     // logical xor immediate
     //  opcode: 0xe
-    R[currentInst.rd] = (R[currentInst.rs] != currentInst.iImm);
+    math_result = (R[currentInst.rs] != currentInst.iImm);
 
     // lui
     // load upper immediate
