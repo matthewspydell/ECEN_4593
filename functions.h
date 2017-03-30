@@ -178,14 +178,13 @@ void ALU()
     R[currentInst.rt]= R[currentInst.rs]+ currentInst.iImm;
 
     //  and
-    //  logical AND
     //  opcode: 0   function: 0x24
-    R[currentInst.rd]= R[currentInst.rs] && R[currentInst.rt];
+    R[currentInst.rd]= R[currentInst.rs] & R[currentInst.rt];
 
     //  andi
     //  AND immediate
     //  opcode: 0xc
-    R[currentInst.rt]= R[currentInst.rs] && currentInst.iImm ;
+    R[currentInst.rt]= R[currentInst.rs] & currentInst.iImm ;
 
     //  clo
     //  Count leading ones
@@ -258,14 +257,12 @@ void ALU()
     result -= concat;
 
     // nor
-    // logical NOR
     // opcode:  0   function: 0x27
-    R[currentInst.rd] = !(R[currentInst.rs] || R[currentInst.rt]);
+    R[currentInst.rd] = !(R[currentInst.rs] | R[currentInst.rt]);
 
     // or
-    // logical OR
     // opcode:  0   function: 0x25
-    R[currentInst.rd] = R[currentInst.rs] || R[currentInst.rt] ;
+    R[currentInst.rd] = R[currentInst.rs] | R[currentInst.rt] ;
 
     // ori
     // logical OR immediate
@@ -325,7 +322,8 @@ void ALU()
     // lui
     // load upper immediate
     //  opcode: 0xf
-    R[currentInst.rt] = (currentInst.iImm << 16) ;
+    R[currentInst.rt] = currentInst.iImm ;
+    R[currentInst.rt] = R[currentInst.rt] << 16;
 
     // slt
     // set less than
@@ -357,6 +355,7 @@ void ALU()
     // branch on equal
     //  opcode: 4
     if( R[currentInst.rs] == R[currentInst.rt])
+        $pc += 4;
         $pc += (currentInst.iImm << 2);
     else
         $pc += 4;
@@ -365,6 +364,7 @@ void ALU()
     //  branch on greater than equal zero
     //  opcode: 1
     if( R[currentInst.rs] >= 0)
+        $pc += 4;
         $pc += (currentInst.iImm << 2);
     else
         $pc += 4;
@@ -374,6 +374,7 @@ void ALU()
     //  if rs greater than or equal to 0. Save address of next instruction in register 31
     //  opcode: 1
     if( R[currentInst.rs] >= 0)
+        $pc += 4;
         $pc += (currentInst.iImm << 2);
         R[31] = $pc+4;
     else
@@ -383,6 +384,7 @@ void ALU()
     //  Branch on greater than zero
     //  opcode: 7
     if( R[currentInst.rs] > 0)
+        $pc += 4;
         $pc += (currentInst.iImm << 2);
     else
         $pc += 4;
@@ -391,6 +393,7 @@ void ALU()
     //  Branch on less than equal zero
     //  opcode: 6
     if( R[currentInst.rs] <= 0)
+        $pc += 4;
         $pc += (currentInst.iImm << 2);
     else
         $pc += 4;
@@ -399,6 +402,7 @@ void ALU()
     //  branch on less than and link
     //  opcode: 1
     if( R[currentInst.rs] < 0)
+        $pc += 4;
         $pc += (currentInst.iImm << 2);
         R[31] = $pc+4;
     else
@@ -408,6 +412,7 @@ void ALU()
     //  branch on less than zero
     //  opcode: 1
     if( R[currentInst.rs] < 0)
+        $pc += 4;
         $pc += (currentInst.iImm << 2);
     else
         $pc += 4;
@@ -416,6 +421,7 @@ void ALU()
     //  branch on not equal
     //  opcode: 5
     if( R[currentInst.rs] != R[currentInst.rt])
+        $pc += 4;
         $pc += (currentInst.iImm << 2);
     else
         $pc += 4;
@@ -494,32 +500,32 @@ void ALU()
     //  lb
     //  load byte
     //  opcode: 0x20
-    R[currentInst.rt] = (memory[ R[currentInst.rs] + currentInst.iImm]) & 0x000000ff;
+    R[currentInst.rt] = sign_ext((memory[ R[currentInst.rs] + currentInst.iImm]) & 0x000000ff);
     $pc = $pc+4;
 
     //  lbu
     //  load unsigned byte
     //  opcode: 0x24
-    R[currentInst.rt] = (memory[ R[currentInst.rs] + currentInst.iImm]) & 0x000000ff;
-    $pc = $pc+4;
+    R[currentInst.rt] = sign_ext((memory[ R[currentInst.rs] + currentInst.iImm]) & 0x000000ff);
+
 
     //  lh
     //  load halfword
     //  opcode: 0x21
-    R[currentInst.rt] = (memory[ R[currentInst.rs] + currentInst.iImm]) & 0x0000ffff;
-    $pc = $pc+4;
+    R[currentInst.rt] = sign_ext((memory[ R[currentInst.rs] + currentInst.iImm]) & 0x0000ffff);
+
 
     //  lhu
     //  load unsigned halfword
     //  opcode: 0x25
-    R[currentInst.rt] = (memory[ R[currentInst.rs] + currentInst.iImm]) & 0x0000ffff;
-    $pc = $pc+4;
+    R[currentInst.rt] = sign_ext((memory[ R[currentInst.rs] + currentInst.iImm]) & 0x0000ffff);
+
 
     //  lw
     //  load word
     //  opcode: 0x23
     R[currentInst.rt] = (memory[ R[currentInst.rs] + currentInst.iImm]) ;
-    $pc = $pc+4;
+
 
     //  lwcl
     //  load word coprocessor 1
@@ -528,6 +534,56 @@ void ALU()
     //  lwl
     //  load word left
     //  opcode: 0x22
+
+
+    //  lwr
+    //  load word right
+    //  opcode: 0x26
+
+    //  ll
+    //  load linked
+    //  opcode: 0x30
+
+    // sb
+    // store byte
+    // opcode: 0x28
+    uint32_t low_byte = (0xff & R[currentInst.rt]);
+    uint32_t mem_index = R[currentInst.rs] + currentInst.iImm ;
+    // whole instruction:: memory[R[currentInst.rs] + currentInst.iImm] = (0xff & R[currentInst.rt]);
+
+    // sh
+    // store halfword
+    // opcode: 0x29
+    uint32_t low_half = (0xffff & R[currentInst.rt]);
+    uint32_t mem_index = R[currentInst.rs] + currentInst.iImm ;
+     // whole instruction:: memory[R[currentInst.rs] + currentInst.iImm] = (0xffff & R[currentInst.rt]);
+
+    // sw
+    // store word
+    // opcode: 0x2b
+    // whole instruction: memory[R[currentInst.rs] + currentInst.iImm] = R[currentInst.rt];
+
+    // swcl
+    // store word coprocessor 1
+    // opcode: 0x31
+
+    // sdcl
+    // store double coprocessor 1
+    // opcode: 0x3d
+
+    // swl
+    // store word left
+    // opcode: 0x2a
+
+    // swr
+    // store word right
+    // opcode: 0x2e
+
+    // sc
+    // store conditional
+    // opcode 0x38
+
+
 
 
 }
