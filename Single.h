@@ -57,7 +57,6 @@ uint32_t imm_mask_j =  0x03FFFFFF;      // for J formats
 uint32_t imm_mask_i =  0x0000FFFF;      // for I formats
 
 
-
 // decode & read register file
 void ID(struct instruction *inst, uint32_t * pc)
 {
@@ -146,7 +145,8 @@ void ID(struct instruction *inst, uint32_t * pc)
 
 // lhu
     case 0x25   :
-
+
+
 // lw
     case 0x23   :
 
