@@ -1,265 +1,49 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include "Single.h"
 
+// CLOCK
+unsigned int cycles = 0;
+bool rising_edge = false;
 
-
-// Register File
-// R[0] always zero
-// Can contain signed numbers in registers
-int32_t R[31] = {0};
-
-
-
-// Memory
-uint32_t memory[];          // words differ by 4 bytes, byte addressed, big endian
-
-// $pc points to first memory address
-uint32_t * $pc = memory;
-
-
-// Masks for decode
-uint32_t byte_mask = 0x000000FF;
-uint32_t half_mask = 0x0000FFFF;
-
-uint32_t opcode_mask = 0xFC000000;      // for all formats
-
-uint32_t rs_mask =     0x03E00000;      // for R & I formats
-uint32_t rt_mask =     0x001F0000;
-
-uint32_t rd_mask =     0x0000F800;      // for R formats
-uint32_t shamt_mask =  0x000007C0;
-uint32_t func_mask  =  0x0000003F;
-
-uint32_t imm_mask_j =  0x03FFFFFF;      // for J formats
-uint32_t imm_mask_i =  0x0000FFFF;      // for I formats
-
-struct instruction {
-
-   uint32_t opcode;
-   uint32_t rs;
-   uint32_t rt;
-   uint32_t rd;
-   uint32_t shamt;
-   uint32_t func;
-   int32_t iImm;
-   uint32_t jImm;
-   bool Rform;
-   bool Iform;
-   bool Jform;
-
-} currentInst;
-
-
-void decode( )
+// update state (register file updated if RegWrite=1 on clock edge)
+void clock_edge()
 {
-    currentInst.opcode =  ( (*$pc & opcode_mask) >> 26 );
-    currentInst.rs = 0;
-    currentInst.rt = 0;
-    currentInst.rd = 0;
-    currentInst.shamt = 0;
-    currentInst.func = 0;
-    currentInst.iImm = 0;
-    currentInst.jImm = 0;
-    currentInst.Rform = false;
-    currentInst.Iform = false;
-    currentInst.Jform = false;
-
-    switch(currentInst.opcode) {
-
-/**************************     R-format Instructions ******************************************/
-
-// arithmetic R
-    case 0x00   :
-
-// clo,clz,mul,madd,maddu,msub,msub  R
-    case 0x1c   :
-        currentInst.Rform = true;
-        currentInst.rs = ( (*$pc & rs_mask) >> 21);
-        currentInst.rt = ( (*$pc & rt_mask) >> 16);
-        currentInst.rd = ( (*$pc & rd_mask) >> 11);
-        currentInst.shamt = ( (*$pc & shamt_mask) >> 6);
-        currentInst.func = ( (*$pc & func_mask));
-
-        break;
-
-/**************************     I-format Instructions ******************************************/
-
-// addi I
-    case 0x08   :
-
-// addiu I
-    case 0x09   :
-
-// andi I
-    case 0xc    :
-
-// ori  I
-    case 0xd    :
-
-// xori I
-    case 0xe    :
-
-// lui  I
-    case 0xf    :
-
-// slti I
-    case 0xa    :
-
-//  sltiu   I
-    case 0xb    :
-
-// beg  I
-    case 0x4    :
-
-// bgez, bgezal,bltzal,teqi,tgei,tgeiu,tlti,tltiu I
-    case 0x1    :
-
-// bgtz I
-    case 0x7    :
-
-// blez I
-    case 0x6    :
-
-// bne  I
-    case 0x5    :
-
-// lb
-    case 0x20   :
-
-// lbu
-    case 0x24   :
-
-// lh
-    case 0x21   :
-
-// lhu
-    case 0x25   :
-
-
-// lw
-    case 0x23   :
-
-// lwcl, swcl
-    case 0x31   :
-
-// lwl
-    case 0x22   :
-
-// lwr
-    case 0x26   :
-
-// ll
-    case 0x30   :
-
-//  sb
-    case 0x28   :
-
-//  sh
-    case 0x29   :
-
-//  sw
-    case 0x2b   :
-
-//  sdcl
-    case 0x3d   :
-
-//  swl
-    case 0x2a   :
-
-//  swr
-    case 0x2e   :
-
-//  sc
-    case 0x38   :
-
-        currentInst.Iform = true;
-        currentInst.rs = ( (*$pc & rs_mask) >> 21);
-        currentInst.rt = ( (*$pc & rt_mask) >> 16);
-        currentInst.iImm = ( (*$pc & imm_mask_i));
-
-        break;
-
- /**************************     J-format Instructions ******************************************/
-
-// j
-    case 0x2    :
-
-// jal  J
-    case 0x3    :
-
-        currentInst.Jform = true;
-        currentInst.jImm = ( (*$pc & imm_mask_j));
-
-        break;
-
-
-//default:    // exception for unrecognized instruction!
-
-
+ rising_edge=true;
 }
 
-printf("opcode: %d \n",currentInst.opcode );
-printf("rs: %d \n",currentInst.rs);
-printf("rt: %d \n",currentInst.rt);
-printf("rd:%d \n",currentInst.rd);
-printf("shamt: %d \n", currentInst.shamt);
-printf("func: %d \n", currentInst.func);
-printf("iImm: %d \n", currentInst.iImm);
-printf("jImm: %d \n", currentInst.jImm);
-printf("R-format: ");
-printf( currentInst.Rform ? "true" : "false");
-printf("\n");
-printf("I-format: ");
-printf( currentInst.Iform ? "true" : "false");
-printf("\n");
-printf("J-format: ");
-printf( currentInst.Jform ? "true" : "false");
-printf("\n");
+// program counter gives address to instruction memory
+// instruction memory gives instruction
+// decode instruction
 
-}
+// read registers
 
+// send in data to ALU, input multiplexor ( Y = S ? I1 : 10; )
+
+// Access data memory for load and store
+
+// update PC ( target address or PC+4), input multiplexor
+
+// specifies ALU operation , decides next instruction
+struct control_unit {
+
+    bool RegWrite;
+    bool MemRead;
+    bool aluIn ;
+    bool MemWrite;
+    bool aluOp;
+    bool regData;
+    bool Branch ;
+    bool Zero ;
+
+} controlUnit;
+
+// update register file
 void next_cycle()
 {
     $pc+4;
 }
-
-// only occurs for I format ?
-int32_t sign_ext(int16_t value)
-{
-   int32_t new_immediate = value;
-     printf("%x\n",value);
-
-   // positive sign bit
-   if(((new_immediate >> 16)& 0x0000000F)== 0)
-   {
-
-       printf("sign bit equals 0\n");
-       // set upper bits to 0's
-       new_immediate = (new_immediate & 0x0000FFFF);
-       printf("%x\n",new_immediate);
-       return new_immediate;
-   }
-
-   // only leave sign bit, negative sign bit case
-   else if ((((!new_immediate) >> 16)& 0x0000000F) == 0)
-   {
-       printf("sign bit equals 1\n");
-       // set upper bits to 1's
-       new_immediate = (new_immediate | 0xFFFF0000);
-       printf("%x\n",new_immediate);
-       return new_immediate;
-   }
-
-   else
-   {
-       printf("Error in sign extension.");
-       exit(0);
-   }
-
-}
-
-
 
 int main()
 {
@@ -268,14 +52,16 @@ int main()
    // printf("%x",test);
 
     memory[0] = 0x00af8020;
-    decode();
 
-    R[currentInst.rt] = 0x6789ABCD;
-    R[currentInst.rs] = 0;
+    IF();
 
-     R[currentInst.rd] = (R[currentInst.rs] < R[currentInst.rt]) ? 1 : 0 ;
 
-     printf("%d", R[currentInst.rd]);
+//    R[currentInst.rt] = 0x6789ABCD;
+//    R[currentInst.rs] = 0;
+//
+//     R[currentInst.rd] = (R[currentInst.rs] < R[currentInst.rt]) ? 1 : 0 ;
+//
+//     printf("%d", R[currentInst.rd]);
 
 //sign_ext(test);
 
