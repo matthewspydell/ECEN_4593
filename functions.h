@@ -1,4 +1,50 @@
+// Register File
+// R[0] always zero
+// Can contain signed numbers in registers
+int32_t R[31] = {0};
 
+
+// Instruction Memory
+// words differ by 4 bytes, byte addressed, big endian
+uint32_t memory[];
+
+// $pc points to first memory address
+uint32_t * $pc = memory;
+
+
+// Masks for decode
+uint32_t byte_mask = 0x000000FF;
+uint32_t half_mask = 0x0000FFFF;
+
+uint32_t opcode_mask = 0xFC000000;      // for all formats
+
+uint32_t rs_mask =     0x03E00000;      // for R & I formats
+uint32_t rt_mask =     0x001F0000;
+
+uint32_t rd_mask =     0x0000F800;      // for R formats
+uint32_t shamt_mask =  0x000007C0;
+uint32_t func_mask  =  0x0000003F;
+
+uint32_t imm_mask_j =  0x03FFFFFF;      // for J formats
+uint32_t imm_mask_i =  0x0000FFFF;      // for I formats
+
+struct instruction {
+
+   uint32_t opcode;
+   uint32_t rs;
+   uint32_t rt;
+   uint32_t rd;
+   uint32_t shamt;
+   uint32_t func;
+   int32_t iImm;
+   uint32_t jImm;
+   bool Rform;
+   bool Iform;
+   bool Jform;
+
+} currentInst;
+
+// fetch and decode
 void decode( )
 {
     currentInst.opcode =  ( (*$pc & opcode_mask) >> 26 );
@@ -142,23 +188,81 @@ void decode( )
         break;
 
 
-default:    // exception for unrecognized instruction!
 
 
     }
+printf("opcode: %d \n",currentInst.opcode );
+printf("rs: %d \n",currentInst.rs);
+printf("rt: %d \n",currentInst.rt);
+printf("rd:%d \n",currentInst.rd);
+printf("shamt: %d \n", currentInst.shamt);
+printf("func: %d \n", currentInst.func);
+printf("iImm: %d \n", currentInst.iImm);
+printf("jImm: %d \n", currentInst.jImm);
+printf("R-format: ");
+printf( currentInst.Rform ? "true" : "false");
+printf("\n");
+printf("I-format: ");
+printf( currentInst.Iform ? "true" : "false");
+printf("\n");
+printf("J-format: ");
+printf( currentInst.Jform ? "true" : "false");
+printf("\n");
 }
 
-void ALU()
+// only occurs for I format ?
+int32_t sign_ext(int16_t value)
+{
+   int32_t new_immediate = value;
+     printf("%x\n",value);
+
+   // positive sign bit
+   if(((new_immediate >> 16)& 0x0000000F)== 0)
+   {
+
+       printf("sign bit equals 0\n");
+       // set upper bits to 0's
+       new_immediate = (new_immediate & 0x0000FFFF);
+       printf("%x\n",new_immediate);
+       return new_immediate;
+   }
+
+   // only leave sign bit, negative sign bit case
+   else if ((((!new_immediate) >> 16)& 0x0000000F) == 0)
+   {
+       printf("sign bit equals 1\n");
+       // set upper bits to 1's
+       new_immediate = (new_immediate | 0xFFFF0000);
+       printf("%x\n",new_immediate);
+       return new_immediate;
+   }
+
+   else
+   {
+       printf("Error in sign extension.");
+       exit(0);
+   }
+
+}
+
+uint32_t ALU(uint32_t reg1, uint32_t input2)
 {
     int32_t lo = 0;
     int32_t hi = 0;
 
     uint32_t lou = 0;
     uint32_t hiu = 0;
-    
+
     uint32_t math_result = 0;
     uint32_t mem_addr = 0;
     uint32_t branch_target = 0;
+
+    int64_t result = 0;
+      uint64_t resultu = 0;
+      int64_t concat = 0;
+      uint64_t concatu = 0;
+
+      uint32_t mem_index = 0;
 
 
     //  add
@@ -216,7 +320,7 @@ void ALU()
     // mult
     // multiply signed
     //  opcode: 0   function:0x18
-    int64_t result = R[currentInst.rs]*R[currentInst.rt];
+    result = R[currentInst.rs]*R[currentInst.rt];
     lo = result;
     hi = (result>>32);
 
@@ -224,9 +328,9 @@ void ALU()
     // multu
     // unsigned multiply
     //  opcode: 0   function:0x19
-    uint64_t result = R[currentInst.rs]*R[currentInst.rt];
-    lou = result;
-    hiu = (result>>32);
+    resultu = R[currentInst.rs]*R[currentInst.rt];
+    lou = resultu;
+    hiu = (resultu>>32);
 
     // mul
     // multiply without overflow
@@ -236,8 +340,8 @@ void ALU()
     // madd
     // multiply add
     //  opcode: 0x1c    function: 0
-    int64_t result = R[currentInst.rs]*R[currentInst.rt];
-    int64_t concat = hi;
+    result = R[currentInst.rs]*R[currentInst.rt];
+    concat = hi;
     concat << 32;
     concat = concat+lo;
     result += concat;
@@ -245,17 +349,17 @@ void ALU()
     // maddu
     // unsigned multiply add
     //  opcode: 0x1c    function: 1
-    uint64_t result = R[currentInst.rs]*R[currentInst.rt];
-    uint64_t concat = hiu;
-    concat << 32;
-    concat = concat+lou;
-    result += concat;
+    resultu = R[currentInst.rs]*R[currentInst.rt];
+    concatu = hiu;
+    concatu << 32;
+    concatu = concatu+lou;
+    resultu += concatu;
 
     // msub
     // multiply subtract signed
     //  opcode: 0x1c    function: 4
-    int64_t result = R[currentInst.rs]*R[currentInst.rt];
-    int64_t concat = hi;
+    result = R[currentInst.rs]*R[currentInst.rt];
+    concat = hi;
     concat << 32;
     concat = concat+lo;
     result -= concat;
@@ -353,92 +457,109 @@ void ALU()
     // branch on equal
     //  opcode: 4
     if( R[currentInst.rs] == R[currentInst.rt])
-        $pc += 4;
+      {
         $pc += (currentInst.iImm << 2);
+        // set control unit to branch
+      }
     else
-        $pc += 4;
+        ;   // nop , pc already incremented 4
 
     //  bgez
     //  branch on greater than equal zero
     //  opcode: 1
     if( R[currentInst.rs] >= 0)
-        $pc += 4;
+       {
         $pc += (currentInst.iImm << 2);
+        // set control unit to branch
+       }
     else
-        $pc += 4;
+        ; //nop , pc already incremented 4
 
     //  bgezal
     //  branch on greater than equal zero and link
     //  if rs greater than or equal to 0. Save address of next instruction in register 31
     //  opcode: 1
     if( R[currentInst.rs] >= 0)
-        $pc += 4;
+        {
         $pc += (currentInst.iImm << 2);
         R[31] = $pc+4;
+        // set control unit to branch
+        }
     else
-        $pc += 4;
+       ;    // nop, pc already incremented 4
 
     //  bgtz
     //  Branch on greater than zero
     //  opcode: 7
     if( R[currentInst.rs] > 0)
-        $pc += 4;
+       {
         $pc += (currentInst.iImm << 2);
+         // set control unit to branch
+       }
     else
-        $pc += 4;
+        ;   // nop, pc already incremented 4
 
     //  blez
     //  Branch on less than equal zero
     //  opcode: 6
     if( R[currentInst.rs] <= 0)
-        $pc += 4;
+        {
         $pc += (currentInst.iImm << 2);
+         // set control unit to branch
+        }
     else
-        $pc += 4;
+        ;   // nop, pc already incremented 4
 
     //  bltzal
     //  branch on less than and link
     //  opcode: 1
     if( R[currentInst.rs] < 0)
-        $pc += 4;
+        {
         $pc += (currentInst.iImm << 2);
         R[31] = $pc+4;
+        // set control unit to branch
+        }
     else
-        $pc += 4;
+       ;    // nop, pc already incremented 4
 
     //  bltz
     //  branch on less than zero
     //  opcode: 1
     if( R[currentInst.rs] < 0)
-        $pc += 4;
+        {
         $pc += (currentInst.iImm << 2);
+          // set control unit to branch
+        }
     else
-        $pc += 4;
+       ;    // nop, pc already incremented 4
 
     //  bne
     //  branch on not equal
     //  opcode: 5
     if( R[currentInst.rs] != R[currentInst.rt])
-        $pc += 4;
+        {
         $pc += (currentInst.iImm << 2);
+         // set control unit to branch
+        }
     else
-        $pc += 4;
+        ;   // nop, pc already incremented 4
 
     //  j
     //  jump
     //  opcode: 2
-    $pc = ($pc & 0xf0000000) | (currentInst.jImm << 2);
+
+    $pc = ((unsigned int)$pc & 0xf0000000) | (currentInst.jImm << 2);
 
     //  jal
     //  jump and link
     //  opcode: 3
-    $pc = ($pc & 0xf0000000) | (currentInst.jImm << 2);
+    $pc = ((unsigned int)$pc & 0xf0000000)| (currentInst.jImm << 2);
     R[31] = $pc+4;
 
     //  jalr
     //  jump and link register
     //  opcode: 0   function: 9
-    $pc = ($pc & 0xf0000000) | (currentInst.jImm << 2);
+    $pc = ((unsigned int)$pc & 0xf0000000) | (currentInst.jImm << 2);
     R[currentInst.rd] = $pc+4;
 
     //  jr
@@ -542,21 +663,20 @@ void ALU()
     // store byte
     // opcode: 0x28
     uint32_t low_byte = (0xff & R[currentInst.rt]);
-    uint32_t mem_index = R[currentInst.rs] + currentInst.iImm ;
+    mem_index = R[currentInst.rs] + currentInst.iImm ;
     // whole instruction:: memory[R[currentInst.rs] + currentInst.iImm] = (0xff & R[currentInst.rt]);
 
     // sh
     // store halfword
     // opcode: 0x29
     uint32_t low_half = (0xffff & R[currentInst.rt]);
-    uint32_t mem_index = R[currentInst.rs] + currentInst.iImm ;
+    mem_index = R[currentInst.rs] + currentInst.iImm ;
      // whole instruction:: memory[R[currentInst.rs] + currentInst.iImm] = (0xffff & R[currentInst.rt]);
 
     // sw
     // store word
     // opcode: 0x2b
     // whole instruction: memory[R[currentInst.rs] + currentInst.iImm] = R[currentInst.rt];
-
 
     // swl
     // store word left
@@ -569,9 +689,6 @@ void ALU()
     // sc
     // store conditional
     // opcode 0x38
-
-
-
 
 }
 
