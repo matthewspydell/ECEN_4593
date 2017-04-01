@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include "Single.h"
 
+
+
 // CLOCK
 unsigned int cycles = 0;
 bool rising_edge = false;
@@ -41,6 +43,11 @@ int main()
     memory[0] = 0x00af8020;
 
     IF();
+
+    uint32_t alu_result;
+    alu_result = ALU(&currentInst);
+
+    printf("\n%d\n",alu_result);
 
 
 //    R[currentInst.rt] = 0x6789ABCD;
