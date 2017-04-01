@@ -25,19 +25,6 @@ void clock_edge()
 
 // update PC ( target address or PC+4), input multiplexor
 
-// specifies ALU operation , decides next instruction
-struct control_unit {
-
-    bool RegWrite;
-    bool MemRead;
-    bool aluIn ;
-    bool MemWrite;
-    bool aluOp;
-    bool regData;
-    bool Branch ;
-    bool Zero ;
-
-} controlUnit;
 
 // update register file
 void next_cycle()
