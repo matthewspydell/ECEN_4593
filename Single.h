@@ -43,9 +43,6 @@ void IF()
     // $pc reads memory address
     $pc = memory;
 
-    // increment pc for later
-    $pc += 4;
-
     ID( &currentInst, $pc);
 }
 
@@ -54,7 +51,7 @@ void IF()
 // Register File
 // R[0] always zero
 // Can contain signed numbers in registers
-int32_t R[31] = {0};
+int32_t R[31] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
 
 // Masks for decode
 uint32_t byte_mask = 0x000000FF;
@@ -101,7 +98,7 @@ void ID(struct instruction *inst, uint32_t * pc)
 
         currentInst.Rform = true;
         currentInst.shamt = ( (*pc & shamt_mask) >> 6);
-        currentInst.func = ( (*pc & func_mask));
+        currentInst.func = *pc & func_mask;
 
           // read register files
         currentInst.rs = R[( (*pc & rs_mask) >> 21)];
@@ -332,6 +329,10 @@ void ID(struct instruction *inst, uint32_t * pc)
 
 
     }
+
+    // increment pc for later
+    $pc += 4;
+
 printf("opcode: %d \n",currentInst.opcode );
 printf("rs: %d \n",currentInst.rs);
 printf("rt: %d \n",currentInst.rt);
@@ -349,6 +350,9 @@ printf("\n");
 printf("J-format: ");
 printf( currentInst.Jform ? "true" : "false");
 printf("\n");
+
+
+
 }
 
 // only occurs for I format ?
@@ -381,7 +385,7 @@ int32_t sign_ext(int16_t value)
    else
    {
        printf("Error in sign extension.");
-       exit(0);
+       return;
    }
 
 }
@@ -739,6 +743,7 @@ uint32_t ALU(struct instruction *inst )
 
 }
 
-
+// Data Memory
+uint32_t data_mem[];
 
 
