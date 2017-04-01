@@ -245,7 +245,7 @@ int32_t sign_ext(int16_t value)
 
 }
 
-uint32_t ALU(uint32_t reg1, uint32_t input2)
+uint32_t ALU(uint32_t reg1, uint32_t input2, struct instruction *inst )
 {
     int32_t lo = 0;
     int32_t hi = 0;
@@ -258,12 +258,11 @@ uint32_t ALU(uint32_t reg1, uint32_t input2)
     uint32_t branch_target = 0;
 
     int64_t result = 0;
-      uint64_t resultu = 0;
-      int64_t concat = 0;
-      uint64_t concatu = 0;
+    uint64_t resultu = 0;
+    int64_t concat = 0;
+    uint64_t concatu = 0;
 
-      uint32_t mem_index = 0;
-
+    uint32_t mem_index = 0;
 
     //  add
     //  add with overflow
@@ -466,7 +465,7 @@ uint32_t ALU(uint32_t reg1, uint32_t input2)
 
     //  bgez
     //  branch on greater than equal zero
-    //  opcode: 1
+    //  opcode: 1   rt: 1
     if( R[currentInst.rs] >= 0)
        {
         $pc += (currentInst.iImm << 2);
@@ -559,8 +558,7 @@ uint32_t ALU(uint32_t reg1, uint32_t input2)
     //  jalr
     //  jump and link register
     //  opcode: 0   function: 9
-    $pc = ((unsigned int)$pc & 0xf0000000) | (currentInst.jImm << 2);
-    R[currentInst.rd] = $pc+4;
+    // ????
 
     //  jr
     //  jump register
