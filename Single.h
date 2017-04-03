@@ -1,26 +1,23 @@
-// IF = Instruction Fetch
+// pipeline registers
 
-// Instruction Memory
-uint32_t memory[];
+#include "Load_Program.h"
+
+// index 0=$pc+4 value      1=address of instruction struct
+uint32_t IF_ID[], IF_ID_shadow[];
+
+// index 0=$pc+4 value      1=address of instruction struct
+uint32_t ID_EX[], ID_EX_shadow[];
+
+// index 0=$pc+4 value      1=address of instruction struct
+uint32_t EX_MEM[], EX_MEM_shadow [];
+
+// index 0=$pc+4 value      1=address of instruction struct
+uint32_t MEM_WB[], MEM_WB_shadow[];
 
 // Program Counter Register
-uint32_t * $pc;
+unsigned int * $pc;
 
-// specifies ALU operation , decides next instruction
-struct control_unit {
 
-    bool RegWrite;
-    bool ALUSrc;
-    unsigned int ALUOp;
-    bool MemWrite;
-    bool MemtoReg;
-    bool MemRead;
-    bool Branch ;
-    bool Zero ;
-    bool PCSrc;
-    bool RegDst;
-
-} controlUnit;
 
 struct instruction {
 
@@ -42,8 +39,8 @@ void IF()
 {
     // $pc reads memory address
     $pc = memory;
-
-    ID( &currentInst, $pc);
+    $pc += program_starting_address;
+    ID( &currentInst, *$pc);
 }
 
 // Instruction Decode and Reading Registers
@@ -51,7 +48,7 @@ void IF()
 // Register File
 // R[0] always zero
 // Can contain signed numbers in registers
-int32_t R[31] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+int32_t R[31] = {1};
 
 // Masks for decode
 uint32_t byte_mask = 0x000000FF;
@@ -72,9 +69,10 @@ uint32_t imm_mask_i =  0x0000FFFF;      // for I formats
 
 
 // decode & read register file
-void ID(struct instruction *inst, uint32_t * pc)
+// returns address of next instructions $pc+4
+void ID(struct instruction *inst, unsigned int pc)
 {
-    currentInst.opcode =  ( (*pc & opcode_mask) >> 26 );
+    currentInst.opcode =  ( (pc & opcode_mask) >> 26 );
     currentInst.rs = 0;
     currentInst.rt = 0;
     currentInst.rd = 0;
@@ -93,29 +91,15 @@ void ID(struct instruction *inst, uint32_t * pc)
 // arithmetic R
     case 0x00   :
 
-// clo,clz,mul,madd,maddu,msub,msub  R
-    case 0x1c   :
-
         currentInst.Rform = true;
-        currentInst.shamt = ( (*pc & shamt_mask) >> 6);
-        currentInst.func = *pc & func_mask;
+        currentInst.shamt = ( (pc & shamt_mask) >> 6);
+        currentInst.func = pc & func_mask;
 
           // read register files
-        currentInst.rs = R[( (*pc & rs_mask) >> 21)];
-        currentInst.rt = R[( (*pc & rt_mask) >> 16)];
-        currentInst.rd = R[( (*pc & rd_mask) >> 11)];
+        currentInst.rs = R[( (pc & rs_mask) >> 21)];
+        currentInst.rt = R[( (pc & rt_mask) >> 16)];
+        currentInst.rd = R[( (pc & rd_mask) >> 11)];
 
-        // Set Control Lines
-        controlUnit.RegWrite = 1;
-        controlUnit.ALUSrc = 0;
-        controlUnit.ALUOp = 10;
-        controlUnit.MemWrite = 0;
-        controlUnit.MemtoReg = 0;
-        controlUnit.MemRead = 0;
-        controlUnit.Branch = 0;
-        controlUnit.Zero = 0;
-        controlUnit.PCSrc = 0;
-        controlUnit.RegDst = 0;
 
         break;
 
@@ -149,73 +133,31 @@ void ID(struct instruction *inst, uint32_t * pc)
         currentInst.Iform = true;
 
         // read register file
-        currentInst.rs = R[( (*pc & rs_mask) >> 21)];
-        currentInst.rt = R[( (*pc & rt_mask) >> 16)];
+        currentInst.rs = R[( (pc & rs_mask) >> 21)];
+        currentInst.rt = R[( (pc & rt_mask) >> 16)];
 
-        currentInst.iImm = ( (*pc & imm_mask_i));
+        currentInst.iImm = ( (pc & imm_mask_i));
 
-        // Set Control Lines
-        controlUnit.RegWrite = 1;
-        controlUnit.ALUSrc = 1;
-        controlUnit.ALUOp = 0;
-        controlUnit.MemWrite = 0;
-        controlUnit.MemtoReg = 0;
-        controlUnit.MemRead = 0;
-        controlUnit.Branch = 0;
-        controlUnit.Zero = 0;
-        controlUnit.PCSrc = 0;
-        controlUnit.RegDst = 0;
 
         break;
 
 
-// lb
-    case 0x20   :
-
 // lbu
     case 0x24   :
-
-// lh
-    case 0x21   :
 
 // lhu
     case 0x25   :
 
-
 // lw
     case 0x23   :
-
-// lwcl, swcl
-    case 0x31   :
-
-// lwl
-    case 0x22   :
-
-// lwr
-    case 0x26   :
-
-// ll
-    case 0x30   :
 
         currentInst.Iform = true;
 
         // read register file
-        currentInst.rs = R[( (*pc & rs_mask) >> 21)];
-        currentInst.rt = R[( (*pc & rt_mask) >> 16)];
+        currentInst.rs = R[( (pc & rs_mask) >> 21)];
+        currentInst.rt = R[( (pc & rt_mask) >> 16)];
 
-        currentInst.iImm = ( (*pc & imm_mask_i));
-
-        // Set Control Lines
-        controlUnit.RegWrite = 1;
-        controlUnit.ALUSrc = 1;
-        controlUnit.ALUOp = 00;
-        controlUnit.MemWrite = 0;
-        controlUnit.MemtoReg = 1;
-        controlUnit.MemRead = 1;
-        controlUnit.Branch = 0;
-        controlUnit.Zero = 0;
-        controlUnit.PCSrc = 0;
-        controlUnit.RegDst = 0;
+        currentInst.iImm = ( (pc & imm_mask_i));
 
         break;
 
@@ -229,45 +171,20 @@ void ID(struct instruction *inst, uint32_t * pc)
 //  sw
     case 0x2b   :
 
-//  sdcl
-    case 0x3d   :
-
-//  swl
-    case 0x2a   :
-
-//  swr
-    case 0x2e   :
-
-//  sc
-    case 0x38   :
-
         currentInst.Iform = true;
 
         // read register file
-        currentInst.rs = R[( (*pc & rs_mask) >> 21)];
-        currentInst.rt = R[( (*pc & rt_mask) >> 16)];
+        currentInst.rs = R[( (pc & rs_mask) >> 21)];
+        currentInst.rt = R[( (pc & rt_mask) >> 16)];
 
-        currentInst.iImm = ( (*pc & imm_mask_i));
-
-        // Set Control Lines
-        controlUnit.RegWrite = 0;
-        controlUnit.ALUSrc = 1;
-        controlUnit.ALUOp = 00;
-        controlUnit.MemWrite = 1;
-        controlUnit.MemtoReg = 0;
-        controlUnit.MemRead = 0;
-        controlUnit.Branch = 0;
-        controlUnit.Zero = 0;
-        controlUnit.PCSrc = 0;
-        controlUnit.RegDst = 0;
+        currentInst.iImm = ( (pc & imm_mask_i));
 
         break;
 
 // beg  I
     case 0x4    :
 
-// bgez, bgezal,bltzal,teqi,tgei,tgeiu,tlti,tltiu I
-    case 0x1    :
+/// add bltz
 
 // bgtz I
     case 0x7    :
@@ -280,23 +197,10 @@ void ID(struct instruction *inst, uint32_t * pc)
         currentInst.Iform = true;
 
         // read register file
-        currentInst.rs = R[( (*pc & rs_mask) >> 21)];
-        currentInst.rt = R[( (*pc & rt_mask) >> 16)];
+        currentInst.rs = R[( (pc & rs_mask) >> 21)];
+        currentInst.rt = R[( (pc & rt_mask) >> 16)];
 
-        currentInst.iImm = ( (*pc & imm_mask_i));
-
-        // Set Control Lines
-        controlUnit.RegWrite = 0;
-        controlUnit.ALUSrc = 0;
-        controlUnit.ALUOp = 01;
-        controlUnit.MemWrite = 0;
-        controlUnit.MemtoReg = 0;
-        controlUnit.MemRead = 0;
-        controlUnit.Branch = 1;
-        controlUnit.Zero = 0;
-        controlUnit.PCSrc = 0;
-        controlUnit.RegDst = 0;
-
+        currentInst.iImm = ( (pc & imm_mask_i));
 
         break;
 
@@ -309,29 +213,10 @@ void ID(struct instruction *inst, uint32_t * pc)
     case 0x3    :
 
         currentInst.Jform = true;
-        currentInst.jImm = ( (*pc & imm_mask_j));
-
-         // Set Control Lines
-        controlUnit.RegWrite = 0;
-        controlUnit.ALUSrc = 0;
-        controlUnit.ALUOp = 0;
-        controlUnit.MemWrite = 0;
-        controlUnit.MemtoReg = 0;
-        controlUnit.MemRead = 0;
-        controlUnit.Branch = 0;
-        controlUnit.Zero = 0;
-        controlUnit.PCSrc = 0;
-        controlUnit.RegDst = 0;
+        currentInst.jImm = ( (pc & imm_mask_j));
 
         break;
-
-
-
-
     }
-
-    // increment pc for later
-    $pc += 4;
 
 printf("opcode: %d \n",currentInst.opcode );
 printf("rs: %d \n",currentInst.rs);
@@ -352,10 +237,8 @@ printf( currentInst.Jform ? "true" : "false");
 printf("\n");
 
 
-
 }
 
-// only occurs for I format ?
 int32_t sign_ext(int16_t value)
 {
    int32_t new_immediate = value;
@@ -403,7 +286,7 @@ uint64_t resultu = 0;
 int64_t concat = 0;
 uint64_t concatu = 0;
 
-uint32_t ALU(struct instruction *inst )
+uint32_t EX(struct instruction *inst )
 {
 
     uint32_t math_result = 0;
@@ -411,6 +294,9 @@ uint32_t ALU(struct instruction *inst )
     uint32_t branch_target = 0;
 
     uint32_t mem_index = 0;
+
+// add nop!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// add jal
 
     switch(inst->opcode) {
 
@@ -430,32 +316,6 @@ uint32_t ALU(struct instruction *inst )
                     case 0x24:
                         return math_result = inst->rs & inst->rt;
 
-                    // div
-                    case 0x1a:
-                        lo = inst->rs / inst->rt;
-                        hi = inst->rs % inst->rt;
-                        return 0;
-
-                    //  divu
-                    case 0x1b:
-                        lou = inst->rs / inst->rt;
-                        hiu = inst->rs % inst->rt;
-                        return 0;
-
-                    // mult
-                    case 0x18:
-                        result = inst->rs * inst->rt;
-                        lo = result;
-                        hi = (result>>32);
-                        return 1;
-
-                    // multu
-                    case 0x19:
-                        resultu = inst->rs * inst->rt;
-                        lou = resultu;
-                        hiu = (resultu>>32);
-                        return 1;
-
                     // nor
                     case 0x27:
                         return math_result = !(inst->rs | inst->rt);
@@ -468,25 +328,9 @@ uint32_t ALU(struct instruction *inst )
                     case 0:
                         return math_result = inst->rt << inst->shamt;
 
-                    // sllv
-                    case 4:
-                        return math_result = inst->rt << inst->rs;
-
-                    // sra
-                    case 3:
-                        return math_result = inst->rt >> inst->shamt;
-
-                    // srav
-                    case 7:
-                        return math_result = inst->rt >> inst->rs;
-
                     // srl
                     case 2:
                         return math_result = inst->rt >> inst->shamt;
-
-                    // srlv
-                    case 6:
-                        return math_result = inst->rt >> inst->rs;
 
                     // sub
                     case 0x22:
@@ -522,52 +366,6 @@ uint32_t ALU(struct instruction *inst )
         case 0xc:
             return math_result = inst->rs & inst->iImm ;
 
-        case 0x1c:
-
-            switch(inst->func)
-            {
-                //  clo
-                case 0x21:
-                    return math_result = __builtin_clz( ~(inst->rs) );
-
-                //  clz
-                case 0x20:
-                    return math_result = __builtin_clz(inst->rs);
-
-                // mul
-                case 2:
-                    return math_result = inst->rs * inst->rt;
-
-                // madd
-                case 0:
-                    result = inst->rs * inst->rt;
-                    concat = hi;
-                    concat << 32;
-                    concat = concat+lo;
-                    result += concat;
-                    return 2;
-
-                // maddu
-                case 1:
-                    resultu = inst->rs * inst->rt;
-                    concatu = hiu;
-                    concatu << 32;
-                    concatu = concatu+lou;
-                    resultu += concatu;
-                    return 3;
-
-                // msub
-                case 4:
-                    result = inst->rs * inst->rt;
-                    concat = hi;
-                    concat << 32;
-                    concat = concat+lo;
-                    result -= concat;
-                    return 4;
-
-        // end opcode 0x1c switch
-            }
-
         // ori
         case 0xd:
             return math_result = inst->rs | inst->iImm;
@@ -592,8 +390,7 @@ uint32_t ALU(struct instruction *inst )
         case 4:
             if( inst->rs == inst->rt)
             {
-                // set control unit to branch
-                controlUnit.Zero=1;
+                //
                 return;
             }
             else
@@ -608,49 +405,11 @@ uint32_t ALU(struct instruction *inst )
                 case 0:
                        if( inst->rs < 0)
                             {
-                              // set control unit to branch
-                              controlUnit.Zero = 1;
+                              //
                               return;
                             }
                         else
                            return;
-
-                //bgez
-                case 1:
-                    if( inst->rs >= 0)
-                       {
-                        // set control unit to branch
-                        controlUnit.Zero = 1;
-                        return;
-                       }
-                    else
-                        return;
-
-                //bgezal
-                case 0x11:
-                    if( inst->rs >= 0)
-                        {
-                        // set control unit to branch
-                        controlUnit.Zero = 1;
-                        return;
-                        }
-                    else
-                        return;
-
-                //bltzal
-                case 0x10:
-                    if( R[currentInst.rs] < 0)
-                        {
-                        // set control unit to branch
-                        controlUnit.Zero = 1;
-
-                        // save address of next instruction
-                        R[31] = $pc;
-
-                        return;
-                        }
-                    else
-                       return;
 
             // end op:1 switch
                 }
@@ -659,8 +418,7 @@ uint32_t ALU(struct instruction *inst )
         case 7:
                if( inst->rs > 0)
                    {
-                     // set control unit to branch
-                     controlUnit.Zero = 1;
+                     //
                      return;
                    }
                 else
@@ -669,8 +427,7 @@ uint32_t ALU(struct instruction *inst )
         case 6:
                   if( inst->rs <= 0)
                     {
-                     // set control unit to branch
-                     controlUnit.Zero = 1;
+                     //
                      return;
                     }
                 else
@@ -680,21 +437,14 @@ uint32_t ALU(struct instruction *inst )
         case 5:
             if( inst->rs != inst->rt )
                 {
-                 // set control unit to branch
-                 controlUnit.Zero = 1;
+                 //
                  return;
                 }
             else
                 return;
 
-        //  lb
-        case 0x20:
-
         //  lbu
         case 0x24:
-
-        //  lh
-        case 0x21:
 
         //  lhu
         case 0x25:
@@ -702,18 +452,6 @@ uint32_t ALU(struct instruction *inst )
         //  lw
         case 0x23:
             return mem_addr = (sign_ext(inst->iImm) + inst->rs);
-
-        //  lwl
-        case 0x22:
-            // ????
-
-        //  lwr
-        case 0x26:
-            // ????
-
-        //  ll
-        case 0x30:
-            // ????
 
         // sb
         case 0x28:
@@ -725,18 +463,6 @@ uint32_t ALU(struct instruction *inst )
         case 0x2b:
             return mem_addr = inst->rs + sign_ext(inst->iImm) ;
 
-
-  /* swl
-        case 0x2a:
-            // ????
-
-        // swr
-        case 0x2e:
-            // ????
-
-        // sc
-        case 0x38:
-            // ???? */
 
     // opcode switch
         }
