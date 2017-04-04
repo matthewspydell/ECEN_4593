@@ -27,20 +27,28 @@ unsigned int *$pc;
 
 struct if_id
 {
-  unsigned int p_counter;
-  instruction copy_inst;
+  unsigned int id_pc;
+  instruction id_inst;
 
 } IF_ID_shadow, IF_ID;
 
+struct id_ex
+{
+    unsigned int ex_pc;
+    instruction ex_inst;
+    uint32_t ex_reg1, ex_reg2,ex_signext;
+}ID_EX_shadow,ID_EX;
 
-// index 0=$pc+4 value      1=address of instruction struct
-uint32_t ID_EX[], ID_EX_shadow[];
+struct ex_mem
+{
+    unsigned int mem_branch_addr, zero_branch;
+    uint32_t alu_result, mem_reg2;
+} EX_MEM_shadow, EX_MEM;
 
-// index 0=$pc+4 value      1=address of instruction struct
-uint32_t EX_MEM[], EX_MEM_shadow [];
-
-// index 0=$pc+4 value      1=address of instruction struct
-uint32_t MEM_WB[], MEM_WB_shadow[];
+struct mem_wb
+{
+    uint32_t read_data, wb_alu_result;
+} MEM_WB_shadow, MEM_WB;
 
 
 
@@ -250,8 +258,8 @@ printf("\n");
 
  ++$pc;
 
-IF_ID_shadow.p_counter = $pc;
-IF_ID_shadow.copy_inst = currentInst;
+IF_ID_shadow.id_pc = $pc;
+IF_ID_shadow.id_inst = currentInst;
 
 }
 
