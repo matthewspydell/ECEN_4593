@@ -21,10 +21,39 @@
 
 int main()
 {
+    int cycle_count;
+
     Initialize_Simulation_Memory();
+
+    $pc = &memory[program_starting_address];
 
     IF();
 
+    //while (1) {
+
+//	  /* initialize state elements */
+//
+//	  initialize_main_memory();
+//	  initialize_icache();
+//	  initialize_dcache();
+//	  initialize_pipeline();
+//	  initialize_analytics();
+//
+//	  $pc = memory[5];
+//	  PCreg.PC = memory[5];
+//	  reg[$sp] = memory[0];;
+//	  reg[$fp] = memory[1];
+	 // cycle_count = 0;
+	//  while ($pc != 0x00000000){
+		//  Execute_Clock_Cycle();
+		//  cycle_count++;
+		//  i++;
+
+	//	  if (Total_Instructions > 0) icache_hit_rate = (Total_Instructions - icache_misses) / Total_Instructions;
+	//	  if (dcache_hits > 0) dcache_hit_rate = (dcache_hits - dcache_misses) / dcache_hits;
+	//	  if (Total_Instructions > 0) CPI = (float)cycle_count / (float) Total_Instructions;
+	 // }
+  //}
 
     return 0;
 }
