@@ -2,24 +2,12 @@
 
 #include "Load_Program.h"
 
-// index 0=$pc+4 value      1=address of instruction struct
-uint32_t IF_ID[], IF_ID_shadow[];
-
-// index 0=$pc+4 value      1=address of instruction struct
-uint32_t ID_EX[], ID_EX_shadow[];
-
-// index 0=$pc+4 value      1=address of instruction struct
-uint32_t EX_MEM[], EX_MEM_shadow [];
-
-// index 0=$pc+4 value      1=address of instruction struct
-uint32_t MEM_WB[], MEM_WB_shadow[];
 
 // Program Counter Register
-unsigned int * $pc;
+unsigned int *$pc;
 
 
-
-struct instruction {
+ typedef struct INSTRUCTION{
 
    uint32_t opcode;
    uint32_t rs;
@@ -33,14 +21,38 @@ struct instruction {
    bool Iform;
    bool Jform;
 
-} currentInst;
+} instruction ;
+
+ instruction currentInst;
+
+struct if_id
+{
+  unsigned int p_counter;
+  instruction copy_inst;
+
+} IF_ID_shadow, IF_ID;
+
+
+// index 0=$pc+4 value      1=address of instruction struct
+uint32_t ID_EX[], ID_EX_shadow[];
+
+// index 0=$pc+4 value      1=address of instruction struct
+uint32_t EX_MEM[], EX_MEM_shadow [];
+
+// index 0=$pc+4 value      1=address of instruction struct
+uint32_t MEM_WB[], MEM_WB_shadow[];
+
+
 
 void IF()
 {
     // $pc reads memory address
-    $pc = memory;
+    $pc = &memory;
     $pc += program_starting_address;
-    ID( &currentInst, *$pc);
+
+    printf("machine code: %x\n\n",*$pc);
+
+    ID();
 }
 
 // Instruction Decode and Reading Registers
@@ -70,9 +82,9 @@ uint32_t imm_mask_i =  0x0000FFFF;      // for I formats
 
 // decode & read register file
 // returns address of next instructions $pc+4
-void ID(struct instruction *inst, unsigned int pc)
+void ID()
 {
-    currentInst.opcode =  ( (pc & opcode_mask) >> 26 );
+    currentInst.opcode =  ( (*$pc & opcode_mask) >> 26 );
     currentInst.rs = 0;
     currentInst.rt = 0;
     currentInst.rd = 0;
@@ -92,13 +104,13 @@ void ID(struct instruction *inst, unsigned int pc)
     case 0x00   :
 
         currentInst.Rform = true;
-        currentInst.shamt = ( (pc & shamt_mask) >> 6);
-        currentInst.func = pc & func_mask;
+        currentInst.shamt = ( (*$pc & shamt_mask) >> 6);
+        currentInst.func = *$pc & func_mask;
 
           // read register files
-        currentInst.rs = R[( (pc & rs_mask) >> 21)];
-        currentInst.rt = R[( (pc & rt_mask) >> 16)];
-        currentInst.rd = R[( (pc & rd_mask) >> 11)];
+        currentInst.rs = R[( (*$pc & rs_mask) >> 21)];
+        currentInst.rt = R[( (*$pc & rt_mask) >> 16)];
+        currentInst.rd = R[( (*$pc & rd_mask) >> 11)];
 
 
         break;
@@ -133,10 +145,10 @@ void ID(struct instruction *inst, unsigned int pc)
         currentInst.Iform = true;
 
         // read register file
-        currentInst.rs = R[( (pc & rs_mask) >> 21)];
-        currentInst.rt = R[( (pc & rt_mask) >> 16)];
+        currentInst.rs = R[( (*$pc & rs_mask) >> 21)];
+        currentInst.rt = R[( (*$pc & rt_mask) >> 16)];
 
-        currentInst.iImm = ( (pc & imm_mask_i));
+        currentInst.iImm = ( (*$pc & imm_mask_i));
 
 
         break;
@@ -154,10 +166,10 @@ void ID(struct instruction *inst, unsigned int pc)
         currentInst.Iform = true;
 
         // read register file
-        currentInst.rs = R[( (pc & rs_mask) >> 21)];
-        currentInst.rt = R[( (pc & rt_mask) >> 16)];
+        currentInst.rs = R[( (*$pc & rs_mask) >> 21)];
+        currentInst.rt = R[( (*$pc & rt_mask) >> 16)];
 
-        currentInst.iImm = ( (pc & imm_mask_i));
+        currentInst.iImm = ( (*$pc & imm_mask_i));
 
         break;
 
@@ -174,10 +186,10 @@ void ID(struct instruction *inst, unsigned int pc)
         currentInst.Iform = true;
 
         // read register file
-        currentInst.rs = R[( (pc & rs_mask) >> 21)];
-        currentInst.rt = R[( (pc & rt_mask) >> 16)];
+        currentInst.rs = R[( (*$pc & rs_mask) >> 21)];
+        currentInst.rt = R[( (*$pc & rt_mask) >> 16)];
 
-        currentInst.iImm = ( (pc & imm_mask_i));
+        currentInst.iImm = ( (*$pc & imm_mask_i));
 
         break;
 
@@ -197,10 +209,10 @@ void ID(struct instruction *inst, unsigned int pc)
         currentInst.Iform = true;
 
         // read register file
-        currentInst.rs = R[( (pc & rs_mask) >> 21)];
-        currentInst.rt = R[( (pc & rt_mask) >> 16)];
+        currentInst.rs = R[( (*$pc & rs_mask) >> 21)];
+        currentInst.rt = R[( (*$pc & rt_mask) >> 16)];
 
-        currentInst.iImm = ( (pc & imm_mask_i));
+        currentInst.iImm = ( (*$pc & imm_mask_i));
 
         break;
 
@@ -213,7 +225,7 @@ void ID(struct instruction *inst, unsigned int pc)
     case 0x3    :
 
         currentInst.Jform = true;
-        currentInst.jImm = ( (pc & imm_mask_j));
+        currentInst.jImm = ( (*$pc & imm_mask_j));
 
         break;
     }
@@ -236,6 +248,10 @@ printf("J-format: ");
 printf( currentInst.Jform ? "true" : "false");
 printf("\n");
 
+ ++$pc;
+
+IF_ID_shadow.p_counter = $pc;
+IF_ID_shadow.copy_inst = currentInst;
 
 }
 
@@ -273,20 +289,8 @@ int32_t sign_ext(int16_t value)
 
 }
 
-
-// global registers for ALU use
-int32_t lo = 0;
-int32_t hi = 0;
-
-uint32_t lou = 0;
-uint32_t hiu = 0;
-
-int64_t result = 0;
-uint64_t resultu = 0;
-int64_t concat = 0;
-uint64_t concatu = 0;
-
-uint32_t EX(struct instruction *inst )
+// Execute operation or calculate address
+uint32_t EX(void)
 {
 
     uint32_t math_result = 0;
@@ -298,81 +302,81 @@ uint32_t EX(struct instruction *inst )
 // add nop!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // add jal
 
-    switch(inst->opcode) {
+    switch(currentInst.opcode) {
 
         case 0x0:
 
-                switch(inst->func)
+                switch(currentInst.func)
                 {
                     //  add
                     case 0x20:
-                        return math_result = inst->rs  + inst->rt;
+                        return math_result = currentInst.rs  + currentInst.rt;
 
                     //  addu
                     case 0x21:
-                        return math_result = inst->rs + inst->rt;
+                        return math_result = currentInst.rs + currentInst.rt;
 
                     //  and
                     case 0x24:
-                        return math_result = inst->rs & inst->rt;
+                        return math_result = currentInst.rs & currentInst.rt;
 
                     // nor
                     case 0x27:
-                        return math_result = !(inst->rs | inst->rt);
+                        return math_result = !(currentInst.rs | currentInst.rt);
 
                     // or
                     case 0x25:
-                        return math_result = inst->rs | inst->rt ;
+                        return math_result = currentInst.rs | currentInst.rt ;
 
                     // sll
                     case 0:
-                        return math_result = inst->rt << inst->shamt;
+                        return math_result = currentInst.rt << currentInst.shamt;
 
                     // srl
                     case 2:
-                        return math_result = inst->rt >> inst->shamt;
+                        return math_result = currentInst.rt >> currentInst.shamt;
 
                     // sub
                     case 0x22:
-                        return math_result = inst->rs - inst->rt;
+                        return math_result = currentInst.rs - currentInst.rt;
 
                     //  subu
                     case 0x23:
-                        return math_result = inst->rs - inst->rt;
+                        return math_result = currentInst.rs - currentInst.rt;
 
                     // xor
                     case 0x26:
-                        return math_result = (inst->rs != inst->rt);
+                        return math_result = (currentInst.rs != currentInst.rt);
 
                     // slt
                     case 0x2a:
-                        return math_result = (inst->rs < inst->rt) ? 1 : 0 ;
+                        return math_result = (currentInst.rs < currentInst.rt) ? 1 : 0 ;
 
                     //  sltu
                     case 0x2b:
-                        return math_result = (inst->rs < inst->rt) ? 1 : 0 ;
+                        return math_result = (currentInst.rs < currentInst.rt) ? 1 : 0 ;
 
                 // end function switch
                 }
         // addi
         case 8:
-            return math_result = inst->rs + inst->iImm;
+            return math_result = currentInst.rs + currentInst.iImm;
 
         // addiu
         case 9:
-            return math_result = inst->rs + inst->iImm;
+            return math_result = currentInst.rs + currentInst.iImm;
 
         //  andi
         case 0xc:
-            return math_result = inst->rs & inst->iImm ;
+            return math_result = currentInst.rs & currentInst.iImm ;
 
         // ori
         case 0xd:
-            return math_result = inst->rs | inst->iImm;
+            return math_result = currentInst.rs | currentInst.iImm;
 
         // xori
         case 0xe:
-            return math_result = (inst->rs != inst->iImm);
+            return math_result = (currentInst.rs != currentInst.iImm);
 
         // lui
         case 0xf:
@@ -380,15 +384,15 @@ uint32_t EX(struct instruction *inst )
 
         // slti
         case 0xa:
-            return math_result = (inst->rs < inst->iImm) ? 1 : 0 ;
+            return math_result = (currentInst.rs < currentInst.iImm) ? 1 : 0 ;
 
         // sltiu
         case 0xb:
-            return math_result = (inst->rs < inst->rt) ? 1 : 0 ;
+            return math_result = (currentInst.rs < currentInst.rt) ? 1 : 0 ;
 
         // beq
         case 4:
-            if( inst->rs == inst->rt)
+            if( currentInst.rs == currentInst.rt)
             {
                 //
                 return;
@@ -398,12 +402,12 @@ uint32_t EX(struct instruction *inst )
 
         case 1:
 
-            switch(inst->rt)
+            switch(currentInst.rt)
                 {
 
                 //bltz
                 case 0:
-                       if( inst->rs < 0)
+                       if( currentInst.rs < 0)
                             {
                               //
                               return;
@@ -416,7 +420,7 @@ uint32_t EX(struct instruction *inst )
 
         //  bgtz
         case 7:
-               if( inst->rs > 0)
+               if( currentInst.rs > 0)
                    {
                      //
                      return;
@@ -425,7 +429,7 @@ uint32_t EX(struct instruction *inst )
                     return;
         //  blez
         case 6:
-                  if( inst->rs <= 0)
+                  if( currentInst.rs <= 0)
                     {
                      //
                      return;
@@ -435,7 +439,7 @@ uint32_t EX(struct instruction *inst )
 
         //  bne
         case 5:
-            if( inst->rs != inst->rt )
+            if( currentInst.rs != currentInst.rt )
                 {
                  //
                  return;
@@ -451,7 +455,7 @@ uint32_t EX(struct instruction *inst )
 
         //  lw
         case 0x23:
-            return mem_addr = (sign_ext(inst->iImm) + inst->rs);
+            return mem_addr = (sign_ext(currentInst.iImm) + currentInst.rs);
 
         // sb
         case 0x28:
@@ -461,7 +465,7 @@ uint32_t EX(struct instruction *inst )
 
         // sw
         case 0x2b:
-            return mem_addr = inst->rs + sign_ext(inst->iImm) ;
+            return mem_addr = currentInst.rs + sign_ext(currentInst.iImm) ;
 
 
     // opcode switch
@@ -469,7 +473,28 @@ uint32_t EX(struct instruction *inst )
 
 }
 
-// Data Memory
-uint32_t data_mem[];
+// Access memory operand
+void MEM()
+{
+}
+
+// Write result back to register
+void WB()
+{
+}
+
+void Move_Shadow_to_Pipeline()
+{
+
+}
+
+void Execute_Clock_Cycle(void)
+{
+    IF();
+  //  ID();
+   // EX();
+//    MEM();
+//    WB();
+}
 
 
