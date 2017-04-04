@@ -1,6 +1,6 @@
 
 
-#define program_starting_address	27
+#define program_starting_address	14
 
 
 #define memory_size 100
