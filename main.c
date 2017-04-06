@@ -5,6 +5,8 @@
 #include "Load_Program.h"
 
 
+
+
 // program counter gives address to instruction memory
 // instruction memory gives instruction
 // decode instruction
@@ -24,8 +26,6 @@ int main()
     int cycle_count;
 
     Initialize_Simulation_Memory();
-
-    $pc = &memory[program_starting_address];
 
     IF();
 
