@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 bool branch = false;
+bool pgrm_start = true;
 
 // Program Counter Register
 unsigned int *$pc;
@@ -122,9 +123,15 @@ void IF()
         $pc = EX_MEM.mem_branch_addr;
     }
     else
-    {   // $pc reads memory address
-        $pc = &memory;
+    {
+        if(pgrm_start == true) // $pc reads memory address
+        {$pc = &memory;
         $pc += program_starting_address;
+        printf("\n starting address: %x\n",$pc);
+        pgrm_start = false;
+        }
+        else
+            ;
     }
 
     IF_ID_shadow.id_pc = ++$pc;
@@ -145,8 +152,6 @@ void IF()
     printf("machine code: %x\n\n",*$pc);
 
     Move_Shadow_to_Pipeline();
-
-    ID();
 }
 
 
@@ -286,8 +291,6 @@ printf("\n");
 ID_EX_shadow.ex_pc = IF_ID.id_pc;
 
  Move_Shadow_to_Pipeline();
-
-EX();
 }
 
 
@@ -505,9 +508,6 @@ void EX()
          EX_MEM_shadow.mem_pc = ID_EX.ex_pc;
          EX_MEM_shadow.mem_inst = ID_EX.ex_inst;
          Move_Shadow_to_Pipeline();
-
-         MEM();
-
 }
 
 // Access memory operand
@@ -570,15 +570,11 @@ void MEM()
     MEM_WB_shadow.wb_inst = EX_MEM.mem_inst;
     MEM_WB_shadow.wb_alu_result = EX_MEM.alu_result;
     Move_Shadow_to_Pipeline();
-
-    WB();
 }
 
 // Write result back to register
 void WB()
 {
-
-
     switch(MEM_WB_shadow.wb_inst.opcode)
     {
         case 0x0:
@@ -676,6 +672,12 @@ void WB()
 
     // increment pc
 
+    printf("Done with WB()\n");
+
+    printf("%x\n\n", MEM_WB.wb_pc);
+
+    $pc = MEM_WB.wb_pc;
+
 }
 
 void Move_Shadow_to_Pipeline()
@@ -686,13 +688,13 @@ void Move_Shadow_to_Pipeline()
     MEM_WB = MEM_WB_shadow;
 }
 
-void Execute_Clock_Cycle(void)
+void Execute_Clock_Cycle()
 {
-   // IF();
-  //  ID();
-   // EX();
-//    MEM();
-//    WB();
+   IF();
+   ID();
+   EX();
+   MEM();
+   WB();
 }
 
 
