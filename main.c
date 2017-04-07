@@ -27,7 +27,8 @@ int main()
 
     Initialize_Simulation_Memory();
 
-    IF();
+    Execute_Clock_Cycle();
+    Execute_Clock_Cycle();
 
     //while (1) {
 
@@ -54,6 +55,8 @@ int main()
 	//	  if (Total_Instructions > 0) CPI = (float)cycle_count / (float) Total_Instructions;
 	 // }
   //}
+
+
 
     return 0;
 }
