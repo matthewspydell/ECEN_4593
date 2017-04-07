@@ -12,9 +12,9 @@ unsigned int *$pc;
  typedef struct INSTRUCTION{
 
    uint32_t opcode;
-   uint32_t rs;
-   uint32_t rt;
-   uint32_t rd;
+   int32_t rs;
+   int32_t rt;
+   int32_t rd;
    uint32_t shamt;
    uint32_t func;
    int32_t iImm;
@@ -37,25 +37,33 @@ struct if_id
 struct id_ex
 {
     unsigned int ex_pc;
-    uint32_t ex_signext;
+    int32_t ex_signext;
     instruction ex_inst;
 }ID_EX_shadow,ID_EX;
 
 struct ex_mem
 {
-    unsigned int mem_branch_addr, zero_branch;
-    uint32_t alu_result, mem_reg2;
+    unsigned int mem_branch_addr, zero_branch,jump_addr;
+    int32_t alu_result, mem_reg2;
+    instruction mem_inst;
+    unsigned int mem_pc;
 } EX_MEM_shadow, EX_MEM;
 
 struct mem_wb
 {
-    uint32_t read_data, wb_alu_result;
+    int32_t read_data, wb_alu_result, dest_reg;
+    instruction wb_inst;
+    unsigned int wb_pc;
+
 } MEM_WB_shadow, MEM_WB;
 
 // Register File
 // R[0] always zero
 // Can contain signed numbers in registers
 int32_t R[31] = {1};
+
+// Data Memory
+int32_t data_mem[];
 
 // Masks for decode
 uint32_t byte_mask = 0x000000FF;
@@ -289,8 +297,6 @@ EX();
 void EX()
 {
 
-    uint32_t mem_addr = 0;
-
     switch(ID_EX.ex_inst.opcode) {
 
         case 0x0:
@@ -300,103 +306,106 @@ void EX()
                     //  add
                     case 0x20:
                         EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs  + ID_EX.ex_inst.rt;
-                        return;
+                        break;
 
                     //  addu
                     case 0x21:
-                        EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs + ID_EX.ex_inst.rt;
-                        return;
+                        EX_MEM_shadow.alu_result = (unsigned int)ID_EX.ex_inst.rs + (unsigned int)ID_EX.ex_inst.rt;
+                        break;
 
                     //  and
                     case 0x24:
                         EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs & ID_EX.ex_inst.rt;
-                        return;
+                        break;
 
                     // nor
                     case 0x27:
                         EX_MEM_shadow.alu_result = !(ID_EX.ex_inst.rs | ID_EX.ex_inst.rt);
-                        return;
+                        break;
 
                     // or
                     case 0x25:
                         EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs | ID_EX.ex_inst.rt ;
-                        return;
+                        break;
 
                     // sll
                     case 0:
                         EX_MEM_shadow.alu_result = ID_EX.ex_inst.rt << ID_EX.ex_inst.shamt;
-                        return;
+                        break;
 
                     // srl
                     case 2:
                         EX_MEM_shadow.alu_result = ID_EX.ex_inst.rt >> ID_EX.ex_inst.shamt;
-                        return;
+                        break;
 
                     // sub
                     case 0x22:
                         EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs - ID_EX.ex_inst.rt;
-                        return;
+                        break;
 
                     //  subu
                     case 0x23:
-                        EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs - ID_EX.ex_inst.rt;
-                        return;
+                        EX_MEM_shadow.alu_result = (unsigned int)ID_EX.ex_inst.rs - (unsigned int)ID_EX.ex_inst.rt;
+                        break;
 
                     // xor
                     case 0x26:
                         EX_MEM_shadow.alu_result = (ID_EX.ex_inst.rs != ID_EX.ex_inst.rt);
-                        return;
+                        break;
 
                     // slt
                     case 0x2a:
                         EX_MEM_shadow.alu_result = (ID_EX.ex_inst.rs < ID_EX.ex_inst.rt) ? 1 : 0 ;
-                        return;
+                        break;
 
                     //  sltu
                     case 0x2b:
-                        EX_MEM_shadow.alu_result = (ID_EX.ex_inst.rs < ID_EX.ex_inst.rt) ? 1 : 0 ;
-                        return;
+                        EX_MEM_shadow.alu_result = ((unsigned int)ID_EX.ex_inst.rs < (unsigned int)ID_EX.ex_inst.rt) ? 1 : 0 ;
+                        break;
 
-                // end function switch
+                // end switch
                 }
+
         // addi
         case 8:
             EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs + ID_EX.ex_signext;
-            return;
+            break;
 
         // addiu
         case 9:
-            EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs + ID_EX.ex_signext;
-            return;
+            EX_MEM_shadow.alu_result = (unsigned int)ID_EX.ex_inst.rs + (unsigned int)ID_EX.ex_inst.iImm;
+            break;
 
         //  andi
         case 0xc:
             EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs & ID_EX.ex_signext ;
-            return;
+            break;
 
         // ori
         case 0xd:
             EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs | ID_EX.ex_signext;
-            return;
+            break;
 
         // xori
         case 0xe:
             EX_MEM_shadow.alu_result = (ID_EX.ex_inst.rs != ID_EX.ex_signext);
-            return;
+            break;
 
         // lui
         case 0xf:
-            // ?????
+            EX_MEM_shadow.alu_result = (ID_EX.ex_inst.iImm);
+            EX_MEM_shadow.alu_result = ((EX_MEM_shadow.alu_result << 16) & 0xFFFF0000 );
+            break;
 
         // slti
         case 0xa:
             EX_MEM_shadow.alu_result = (ID_EX.ex_inst.rs < ID_EX.ex_signext) ? 1 : 0 ;
-            return;
+            break;
 
         // sltiu
         case 0xb:
-            EX_MEM_shadow.alu_result = (ID_EX.ex_inst.rs < ID_EX.ex_signext) ? 1 : 0 ;
-            return;
+            EX_MEM_shadow.alu_result = (ID_EX.ex_inst.rs < (unsigned int)ID_EX.ex_inst.iImm) ? 1 : 0 ;
+            break;
 
         // beq
         case 4:
@@ -405,10 +414,10 @@ void EX()
                 branch = true;
                 EX_MEM_shadow.zero_branch = 1;
                 EX_MEM_shadow.mem_branch_addr = ( (ID_EX.ex_signext << 2) + (ID_EX.ex_pc) );
-                return;
+                break;
             }
             else
-                return;
+                break;
 
         case 1:
 
@@ -418,10 +427,10 @@ void EX()
                                branch = true;
                                 EX_MEM_shadow.zero_branch = 1;
                                 EX_MEM_shadow.mem_branch_addr = ( (ID_EX.ex_signext << 2) + (ID_EX.ex_pc) );
-                              return;
+                              break;
                             }
                         else
-                           return;
+                           break;
         //  bgtz
         case 7:
                if( ID_EX.ex_inst.rs > 0)
@@ -429,10 +438,10 @@ void EX()
                       branch = true;
                        EX_MEM_shadow.zero_branch = 1;
                        EX_MEM_shadow.mem_branch_addr = ( (ID_EX.ex_signext << 2) + (ID_EX.ex_pc) );
-                     return;
+                     break;
                    }
                 else
-                    return;
+                    break;
         //  blez
         case 6:
                   if( ID_EX.ex_inst.rs <= 0)
@@ -440,10 +449,10 @@ void EX()
                       branch = true;
                        EX_MEM_shadow.zero_branch = 1;
                        EX_MEM_shadow.mem_branch_addr = ( (ID_EX.ex_signext << 2) + (ID_EX.ex_pc) );
-                     return;
+                     break;
                     }
                 else
-                    return;
+                    break;
 
         //  bne
         case 5:
@@ -455,8 +464,9 @@ void EX()
                  return;
                 }
             else
-                return;
+                break;
 
+// all these next instructions just calculate address
         //  lbu
         case 0x24:
 
@@ -465,7 +475,6 @@ void EX()
 
         //  lw
         case 0x23:
-            EX_MEM_shadow.alu_result = (ID_EX.ex_signext) + ID_EX.ex_inst.rs;
 
         // sb
         case 0x28:
@@ -476,26 +485,197 @@ void EX()
         // sw
         case 0x2b:
             EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs + ID_EX.ex_signext ;
+            printf("\n\n alu result: %x \n\n",EX_MEM_shadow.alu_result);
+            break;
 
-        // jal  J
-        case 0x3    :
-            // ???????
-            return;
 
+        // jal  J ( store this value in register #31), do everything jump does (don't return yet)
+        case 0x3    : EX_MEM_shadow.alu_result = ++ID_EX.ex_pc;
+
+        // j
+        case 0x2    :
+                        EX_MEM_shadow.jump_addr = (ID_EX.ex_pc & 0xF0000000) | (ID_EX.ex_inst.jImm << 2);
+                        EX_MEM_shadow.zero_branch = 1;
+                        branch = true;
+                        break;
 
     // opcode switch
         }
+
+         EX_MEM_shadow.mem_pc = ID_EX.ex_pc;
+         EX_MEM_shadow.mem_inst = ID_EX.ex_inst;
+         Move_Shadow_to_Pipeline();
+
+         MEM();
 
 }
 
 // Access memory operand
 void MEM()
 {
+    // do nothing for R-format instructions (wait for WB() )
+
+    MEM_WB_shadow.wb_pc = EX_MEM.mem_pc;
+
+    int32_t base_addr = &data_mem;
+
+    unsigned int index;
+    if(EX_MEM.alu_result == 0)
+    {
+        index = 0;
+    }
+    else if (EX_MEM.alu_result > base_addr)
+    {
+        index = EX_MEM.alu_result - base_addr;
+    }
+    else
+        index = base_addr + EX_MEM.alu_result;
+
+    switch(EX_MEM.mem_inst.opcode)
+    {
+        //  lbu
+        case 0x24:
+            MEM_WB_shadow.read_data = (data_mem[index] & 0x000000FF );
+            MEM_WB_shadow.dest_reg = EX_MEM.mem_inst.rt;
+            break;
+
+        //  lhu
+        case 0x25:
+            MEM_WB_shadow.read_data = (data_mem[index] & 0x0000FFFF );
+            MEM_WB_shadow.dest_reg = EX_MEM.mem_inst.rt;
+            break;
+
+        //  lw
+        case 0x23:
+            MEM_WB_shadow.read_data = data_mem[index];
+            MEM_WB_shadow.dest_reg = EX_MEM.mem_inst.rt;
+            break;
+
+        // sb
+        case 0x28:
+            data_mem[index] = ( EX_MEM.mem_inst.rt & 0x000000FF );
+            break;
+
+        // sh
+        case 0x29:
+            data_mem[index] = ( EX_MEM.mem_inst.rt & 0x0000FFFF );
+            break;
+
+        // sw
+        case 0x2b:
+            data_mem[index] = EX_MEM.mem_inst.rt;
+            break ;
+    }
+
+    MEM_WB_shadow.wb_inst = EX_MEM.mem_inst;
+    MEM_WB_shadow.wb_alu_result = EX_MEM.alu_result;
+    Move_Shadow_to_Pipeline();
+
+    WB();
 }
 
 // Write result back to register
 void WB()
 {
+
+
+    switch(MEM_WB_shadow.wb_inst.opcode)
+    {
+        case 0x0:
+
+                switch(ID_EX.ex_inst.func)
+                {
+                    /// all of the following write back to rd
+                    //  add
+                    case 0x20:
+
+                    //  addu
+                    case 0x21:
+
+                    //  and
+                    case 0x24:
+
+                    // nor
+                    case 0x27:
+
+                    // or
+                    case 0x25:
+
+                    // sll
+                    case 0:
+
+                    // srl
+                    case 2:
+
+                    // sub
+                    case 0x22:
+
+                    //  subu
+                    case 0x23:
+
+                    // xor
+                    case 0x26:
+
+                    // slt
+                    case 0x2a:
+
+                    //  sltu
+                    case 0x2b:
+
+                                R[ MEM_WB.wb_inst.rd ] = MEM_WB_shadow.wb_alu_result;
+                                break;
+
+                // end switch
+                }
+
+        /// all of the following write back to rt
+        // addi
+        case 8:
+
+        // addiu
+        case 9:
+
+        //  andi
+        case 0xc:
+
+        // ori
+        case 0xd:
+
+        // xori
+        case 0xe:
+
+        // lui
+        case 0xf:
+
+        // slti
+        case 0xa:
+
+        // sltiu
+        case 0xb:
+
+                    R[ MEM_WB_shadow.wb_inst.rt ] = MEM_WB_shadow.wb_alu_result;
+                    break;
+
+        /// all load write back to register rt (.dest_reg)
+        //  lbu
+        case 0x24:
+
+        //  lhu
+        case 0x25:
+
+        //  lw
+        case 0x23:
+                  R[ MEM_WB.dest_reg ] = MEM_WB.read_data;
+                  break;
+
+        // jal  J ( store this value in register #31), do everything jump does (don't return yet)
+        case 0x3    :
+                  R[31] = ++MEM_WB.wb_pc;
+                  break;
+    }
+
+    // increment pc
+
 }
 
 void Move_Shadow_to_Pipeline()
@@ -508,7 +688,7 @@ void Move_Shadow_to_Pipeline()
 
 void Execute_Clock_Cycle(void)
 {
-    IF();
+   // IF();
   //  ID();
    // EX();
 //    MEM();
