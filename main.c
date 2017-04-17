@@ -1,45 +1,30 @@
 #include <stdio.h>
-#include <stdint.h>
 #include <stdbool.h>
+#include <sys/types.h>
 
 #include "registerFile.h"
 #include "pipelineRegisters.h"
-#include "instructionFetch.h"
-#include "instructionDecode.h"
-#include "instructionExecute.h"
-#include "memoryAccess.h"
-#include "writeBack.h"
+#include "executeClock.h"
 
 // setup memory
-uint32_t memory[];  // words differ by 4 bytes
+uint32_t mainMemory[1024];  // words aligned memory
 
 // $pc points to first memory address
-$pc = memory[];
+$pc = mainMemory[5];
+$sp = mainMemory[0];
+$fp = mainMemory[1];
 
-/* in between each instruction move data from shadow pipeline registers
- * to actual pipeline registers to check basic functionality
- */
+// setup variables to keep track while program runs
+clockCycles = 0;
+bool stallPipe = false;
+
 int main()
 {
-    memory[0] = 0x00af8020;
+  // program stops when $pc reaches address zero
+  while ($pc != 0) {
+    executeClock();
+    clockCycles++;
+  }
 
-    instructionFetch($pc);  // fetch instruction
-
-    flipShadow();
-
-    instructionDecode();  // decode instruction
-
-    flipShadow();
-
-    instructionExecute(); // execute instruction
-
-    flipShadow();
-
-    memoryAccess(); // access memory depending on instruction
-
-    flipShadow();
-
-    writeBack();  // write back to register file depending on instruction
-
-    return 0;
+  return 0;
 }

@@ -1,6 +1,7 @@
 /* @author matthewspydell
  *
  */
+ 
 #ifndef instructionDecode_h
 #define instructionDecode_h
 
@@ -21,7 +22,7 @@ uint32_t immMask = 0x0000FFFF;
 // J-format additional instruction mask
 uint32_t addMask = 0x03FFFFFF;
 
-/* instruction pointer holds address of IF/ID pipeline 
+/* instruction pointer holds address of IF/ID pipeline
  * register that holds the next instruction
  */
 uint32_t* instruction = &(IF_ID.instruction);
@@ -31,4 +32,4 @@ uint32_t* instruction = &(IF_ID.instruction);
  */
 void instructionDecode(int* instruction);
 
-#endif instructionDecode_h
+#endif
