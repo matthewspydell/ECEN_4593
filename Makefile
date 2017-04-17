@@ -2,10 +2,15 @@ CC = gcc
 CFLAGS = -c -g -Wall -Wextra
 LFLAGS = -Wall -Wextra
 
-all: main
+.PHONY: all clean
 
-main: registerFile.o pipelineRegisters.o executeClock.o
+all: simulate
+
+simulate: main.o registerFile.o pipelineRegisters.o executeClock.o
 	$(CC) $(LFLAGS) $^ -o $@
+
+main.o: main.c
+	$(CC) $(CFLAGS) $<
 
 registerFile.o: registerFile.h
 	$(CC) $(CFLAGS) $<
@@ -13,7 +18,7 @@ registerFile.o: registerFile.h
 pipelineRegisters.o: pipelineRegisters.h
 	$(CC) $(CFLAGS) $<
 
-executeClock.o: executeClock.h executeClock.c instructionFetch.h instructionFetch.c instructionDecode.h instructionDecode.c instructionExecute.h instructionExecute.c memoryAccess.h memoryAccess.c writeBack.h writeBack.c flipShadow.h flipShadow.c
+executeClock.o: executeClock.c executeClock.h
 	$(CC) $(CFLAGS) $<
 
 clean:
