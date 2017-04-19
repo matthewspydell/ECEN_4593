@@ -2,9 +2,12 @@
  * @author matthewspydell
  */
 
- #ifndef writeBack_h
- #define writeBack_h
+#ifndef WRITEBACK_H
+#define WRITEBACK_H
 
- void writeBack();
+#include "main.h"
 
- #endif
+void writeBack();
+
+#endif /* WRITEBACK_H */
+

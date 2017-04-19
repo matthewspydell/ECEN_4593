@@ -1,6 +1,8 @@
-/* @author matthewspydell
- *
+/*
+ * @author matthewspydell
  */
+
+#include "instructionExecute.h"
 
 void instructionExecute() {
   EX_MEM.rdShadow = ID_EX.rd; // move rd to next pipeline register
@@ -13,11 +15,14 @@ void instructionExecute() {
     if (ID_EX.rs == EX_MEM.rd || ID_EX.rs == MEM_WB.rd || ID_EX.rt == EX_MEM.rd || ID_EX.rt == MEM_WB.rd) {
       if (ID_EX.rs == EX_MEM.rd) {
         R[ID_EX.rs] = EX_MEM.aluOutput;
-      } else if (ID_EX.rs == MEM_WB.rd) {
+      } 
+      if (ID_EX.rs == MEM_WB.rd) {
         R[ID_EX.rs] = MEM_WB.aluOutput;
-      } else if (ID_EX.rt == EX_MEM.rd) {
+      } 
+      if (ID_EX.rt == EX_MEM.rd) {
         R[ID_EX.rt] = EX_MEM.aluOutput;
-      } else {
+      } 
+      if (ID_EX.rt == MEM_WB.rd) {
         R[ID_EX.rt] = MEM_WB.aluOutput;
       }
     }
@@ -77,7 +82,8 @@ void instructionExecute() {
       if (ID_EX.rs == EX_MEM.rd || ID_EX.rs == MEM_WB.rd) {
         if (ID_EX.rs == EX_MEM.rd) {
           R[ID_EX.rs] = EX_MEM.aluOutput;
-        } else {
+        } 
+        if (ID_EX.rs == MEM_WB.rd) {
           R[ID_EX.rs] = MEM_WB.aluOutput;
         }
       }
@@ -88,7 +94,7 @@ void instructionExecute() {
         EX_MEM.aluOutputShadow = (uint32_t) ((int)R[ID_EX.rs] + (int)ID_EX.imm);
         break;
       case 0x09:  // add immediate, R[rt] = R[rs] + imm (unsigned)
-        EX_MEM.aluOutputShadow = R[ID_EX.rs] + ID_EX.imm);
+        EX_MEM.aluOutputShadow = (uint32_t) ((int)R[ID_EX.rs] + (int)ID_EX.imm);
         break;
       case 0x0C:  // and immediate, R[rt] = R[rs] & imm (zero extended)
         EX_MEM.aluOutputShadow = R[ID_EX.rs] & ID_EX.imm;
@@ -106,7 +112,7 @@ void instructionExecute() {
         EX_MEM.aluOutputShadow = R[ID_EX.rs] | ID_EX.imm;
         break;
       case 0x0A:  // set less than, R[rt] = (R[rs] < imm) ? 1:0 (signed)
-        EX_MEM.aluOutputShadow = (uint32_t) (((int)R[ID_EX.rs] < (int)imm) ? 1:0);
+        EX_MEM.aluOutputShadow = (uint32_t) (((int)R[ID_EX.rs] < (int)ID_EX.imm) ? 1:0);
         break;
       case 0x0B:  // set less than, R[rt] = (R[rs] < imm) ? 1:0 (unsigned)
         EX_MEM.aluOutputShadow = (R[ID_EX.rs] < ID_EX.imm) ? 1:0;

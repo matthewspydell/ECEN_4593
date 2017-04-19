@@ -1,10 +1,13 @@
-/* @author matthewspydell
- *
+/*
+ * @author matthewspydell
  */
 
-#ifndef instructionExecute_h
-#define instructionExecute_h
+#ifndef INSTRUCTIONEXECUTE_H
+#define INSTRUCTIONEXECUTE_H
+
+#include "main.h"
 
 void instructionExecute();
 
-#endif
+#endif /* INSTRUCTIONEXECUTE_H */
+

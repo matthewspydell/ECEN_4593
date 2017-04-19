@@ -2,6 +2,8 @@
  * @author matthewspydell
  */
 
+#include "writeBack.h"
+
  void writeBack() {
 
    switch (MEM_WB.opcode) {

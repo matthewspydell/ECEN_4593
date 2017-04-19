@@ -2,6 +2,8 @@
  * @author matthewspydell
  */
 
+#include "flipShadow.h"
+
 void flipShadow() {
   // flip IF/ID pipeline register if no stall
   if (!stallPipe) {
@@ -22,14 +24,16 @@ void flipShadow() {
   // flip EX/MEM pipeline register
   EX_MEM.rd = EX_MEM.rdShadow;
   EX_MEM.aluOutput = EX_MEM.aluOutputShadow;
-  EX_MEM.address = EX_MEM.addressShadow;
+  EX_MEM.opcode = EX_MEM.opcodeShadow;
+  EX_MEM.memRead = EX_MEM.memReadShadow;
 
   // flip MEM/WB pipeline register
   MEM_WB.rd = MEM_WB.rdShadow;
   MEM_WB.aluOutput = MEM_WB.aluOutputShadow;
-  MEM_WB.addressOut = MEM_WB.addressOutputShadow;
+  MEM_WB.opcode = MEM_WB.opcodeShadow;
+  MEM_WB.memRead = MEM_WB.memReadShadow;
 
   stallPipe = false;
-  if (!pcJump) $pc++;
-  pcJump = false;
+  if (!pcBranch) $pc++;
+  pcBranch = false;
 }

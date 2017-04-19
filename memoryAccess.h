@@ -2,9 +2,12 @@
  * @author matthewspydell
  */
 
- #ifndef memoryAccess_h
- #define memoryAccess_h
+#ifndef MEMORYACCESS_H
+#define MEMORYACCESS_H
 
- void memoryAccess();
+#include "main.h"
 
- #endif
+void memoryAccess();
+
+#endif /* MEMORYACCESS_H */
+

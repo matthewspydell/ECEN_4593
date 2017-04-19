@@ -2,16 +2,18 @@
  * @author matthewspydell
  */
 
- #include "instructionFetch.h"
- #include "instructionDecode.h"
- #include "instructionExecute.h"
- #include "memoryAccess.h"
- #include "writeBack.h"
- #include "flipShadow.h"
+#ifndef EXECUTECLOCK_H
+#define EXECUTECLOCK_H
 
- #ifndef executeClock_h
- #define executeClock_h
+#include "main.h"
+#include "instructionFetch.h"
+#include "instructionDecode.h"
+#include "instructionExecute.h"
+#include "memoryAccess.h"
+#include "writeBack.h"
+#include "flipShadow.h"
 
- void executeClock();
+void executeClock();
 
- #endif
+#endif /* EXECUTECLOCK_H */
+

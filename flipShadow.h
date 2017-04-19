@@ -2,9 +2,12 @@
  * @author matthewspydell
  */
 
- #ifndef flipShadow_h
- #define flipShadow_h
+#ifndef FLIPSHADOW_H
+#define FLIPSHADOW_H
 
- void flipShadow();
+#include "main.h"
 
- #endif
+void flipShadow();
+
+#endif /* FLIPSHADOW_H */
+

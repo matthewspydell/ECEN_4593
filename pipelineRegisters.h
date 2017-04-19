@@ -3,8 +3,10 @@
  * pipeline registers IF/ID, ID/EX, EX/MEM, and MEM/WB
  */
 
-#ifndef pipelineRegisters_h
-#define pipelineRegisters_h
+#ifndef PIPELINEREGISTERS_H
+#define PIPELINEREGISTERS_H
+
+#include "main.h"
 
 /* instruction-fetch | instruction-decode register */
 struct IFID {
@@ -63,4 +65,6 @@ struct MEMWB {
 } MEM_WB;
 // create and initialize MEM_WB pipeline register
 
-#endif
+
+#endif /* PIPELINEREGISTERS_H */
+

@@ -1,8 +1,26 @@
-/* @author Matthew Spydell
+/*
+ * @author Matthew Spydell
  * MIPS Instruction Decoder
  */
 
 #include "instructionDecode.h"
+
+/* these are the various masks used to pull out each value that needs
+ * to be loaded into the pipeline registers
+ */
+// R-format instruction masks
+uint32_t opcodeMask = 0xFC000000;
+uint32_t rsMask = 0x03E00000;
+uint32_t rtMask = 0x001F0000;
+uint32_t rdMask = 0x0000F800;
+uint32_t shamtMask = 0x000007C0;
+uint32_t functMask = 0x0000003F;
+
+// I-format additional instruction mask
+uint32_t immMask = 0x0000FFFF;
+
+// J-format additional instruction mask
+uint32_t addMask = 0x03FFFFFF;
 
 void instructionDecode() {
 
@@ -16,7 +34,8 @@ void instructionDecode() {
     ID_EX.shamtShadow = (IF_ID.instruction & shamtMask)>>6;
     ID_EX.functShadow = (IF_ID.instruction & functMask);
   } else if (ID_EX.opcodeShadow == 0x2 || ID_EX.opcodeShadow == 0x3) { // J-format instruction
-    ID_EX.addressShadow = (IF_ID.instruction & addMask);
+    $pc = (IF_ID.instruction & addMask);    // jump to new address
+    IF_ID.instructionShadow = mainMemory[$pc];  // fetch new instruction and put in IF_ID pipeline
   } else { // I-format instruction
     ID_EX.rsShadow = (IF_ID.instruction & rsMask)>>21;
     ID_EX.rdShadow = (IF_ID.instruction & rtMask)>>16; // rd == rt for I-format instructions
@@ -48,7 +67,7 @@ void instructionDecode() {
       // check whether to take branch
       if ((R[ID_EX.rsShadow] == R[ID_EX.rdShadow]) && !stallPipe) {
         $pc = (uint32_t) ((int)($pc) + (int)ID_EX.immShadow);
-        pcJump = true;  // don't increment $pc after the jump
+        pcBranch = true;  // don't increment $pc after the jump
       }
     }
     // branch on not equal, if (R[rs] != R[rt]) $pc = $pc + 4 + branchAddress
@@ -72,7 +91,7 @@ void instructionDecode() {
       // check whether to take branch
       if ((R[ID_EX.rsShadow] != R[ID_EX.rdShadow]) && !stallPipe) {
         $pc = (uint32_t) ((int)($pc) + (int)ID_EX.immShadow);
-        pcJump = true;  // don't increment $pc after the jump
+        pcBranch = true;  // don't increment $pc after the jump
       }
     }
   }
