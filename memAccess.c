@@ -26,13 +26,13 @@ memAccess(bool icache, bool read, uint32_t address) {
 	} else {
 		if (dcash[blockIndex][blockOffset].tag != tag || dcash[blockIndex][blockOffset].v != true) {
 			if (dcash[blockIndex][blockOffset].v == true && dcash[blockIndex][blockOffset].d == true) {
-				// pay write-back penalty
+				clockCycles = (clockCycles + 8) + (2*blockSize);	// pay write-back penalty
 			}
+			clockCycles = (clockCycles + 8) + (2*blockSize);	// pay load penalty
+			dcash[blockIndex][blockOffset].tag = tag;
+			dcash[blockIndex][blockOffset].v = true;
+			dcash[blockIndex][blockOffset].d = false;
 		}
-		clockCycles = (clockCycles + 8) + (2*blockSize);	// pay load penalty
-		dcash[blockIndex][blockOffset].tag = tag;
-		dcash[blockIndex][blockOffset].v = true;
-		dcash[blockIndex][blockOffset].d = false;
 		if(!read) {
 			dcash[blockIndex][blockOffset].d = true;	// if write mark data as dirty
 		}
