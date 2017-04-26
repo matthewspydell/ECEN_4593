@@ -21,23 +21,43 @@ memAccess(bool icache, bool read, uint32_t address) {
 		cashElement = icash[blockIndex][blockOffset];
 
 		if (cashElement.tag != tag || cashElement.v != true) {
-			clockCycles = (clockCycles + 8) + (2*blockSize);	// pay load penalty
-			cashElement.tag = tag;
-			cashElement.v = true;
+			clockCycles = clockCycles + 8;		// pay initial load penalty
+			for (int i=0; i<offsetSize; i++) {	// load
+				icash[blockIndex][i].tag = tag;
+				icash[blockIndex][i].v = true;
+				if (i<=blockOffset) {	// early start once the block desired is in cache
+					clockCycles += 2;
+				} else {
+					clockCycles ++;
+				}
+			}
 		}
 	} else {
 		cashElement = dcash[blockIndex][blockOffset];
 
 		if (cashElement.tag != tag || cashElement.v != true) {
 			if (cashElement.v == true && cashElement.d == true) {
-				clockCycles = (clockCycles + 8) + (2*blockSize);	// pay write-back penalty
+
+				for (int i=0; i<offsetSize; i++) {	// loop through words to write back
+					if (dcash[blockIndex][i].d == true) {
+						clockCycles++;	// pay write-back penalty for dirty data only
+					}
+				}	
 			}
-			clockCycles = (clockCycles + 8) + (2*blockSize);	// pay load penalty
-			cashElement.tag = tag;
-			cashElement.v = true;
-			cashElement.d = false;
+
+			clockCycles = clockCycles + 8;		// pay initial load penalty
+			for (int i=0; i<offsetSize; i++) {	// load
+				dcash[blockIndex][i].tag = tag;
+				dcash[blockIndex][i].v = true;
+				dcash[blockIndex][i].d = false;
+				if (i<=blockOffset) {	// early start once the block desired is in cache
+					clockCycles += 2;
+				} else {
+					clockCycles++;
+				}
+			}
 		}
-		if(!read) {
+		if (!read) {
 			cashElement.d = true;	// if write mark data as dirty
 		}
 	}
