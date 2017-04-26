@@ -36,9 +36,7 @@ struct id_ex
 
 struct ex_mem
 {
-    unsigned int  zero_branch,jump_addr;
-    int32_t mem_branch_addr;
-    int32_t alu_result, mem_reg2;
+    int32_t alu_result;
     instruction mem_inst;
     unsigned int mem_pc, next_pc;
     unsigned int dest_rd, dest_rt;
@@ -82,8 +80,6 @@ uint32_t imm_mask_i =  0x0000FFFF;      // for I formats
 int32_t sign_ext(int16_t value)
 {
    int32_t new_immediate = value;
-
-   // printf("Original: %d \t Sign extended = %d", value,new_immediate);
 
     return new_immediate;
 }
