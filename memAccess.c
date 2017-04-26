@@ -18,23 +18,27 @@ memAccess(bool icache, bool read, uint32_t address) {
 	struct cache_element cashElement;
 
 	if (icache) {
-		if (icash[blockIndex][blockOffset].tag != tag || icash[blockIndex][blockOffset].v != true) {
+		cashElement = icash[blockIndex][blockOffset];
+
+		if (cashElement.tag != tag || cashElement.v != true) {
 			clockCycles = (clockCycles + 8) + (2*blockSize);	// pay load penalty
-			icash[blockIndex][blockOffset].tag = tag;
-			icash[blockIndex][blockOffset].v = true;
+			cashElement.tag = tag;
+			cashElement.v = true;
 		}
 	} else {
-		if (dcash[blockIndex][blockOffset].tag != tag || dcash[blockIndex][blockOffset].v != true) {
-			if (dcash[blockIndex][blockOffset].v == true && dcash[blockIndex][blockOffset].d == true) {
+		cashElement = dcash[blockIndex][blockOffset];
+
+		if (cashElement.tag != tag || cashElement.v != true) {
+			if (cashElement.v == true && cashElement.d == true) {
 				clockCycles = (clockCycles + 8) + (2*blockSize);	// pay write-back penalty
 			}
 			clockCycles = (clockCycles + 8) + (2*blockSize);	// pay load penalty
-			dcash[blockIndex][blockOffset].tag = tag;
-			dcash[blockIndex][blockOffset].v = true;
-			dcash[blockIndex][blockOffset].d = false;
+			cashElement.tag = tag;
+			cashElement.v = true;
+			cashElement.d = false;
 		}
 		if(!read) {
-			dcash[blockIndex][blockOffset].d = true;	// if write mark data as dirty
+			cashElement.d = true;	// if write mark data as dirty
 		}
 	}
 }
