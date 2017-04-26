@@ -1,0 +1,85 @@
+//////////////// store byte logic
+sb rt, offset(rs)
+
+baseAddress = (rs+offset)>>2;
+byteOffset = (rs+offset)%4;
+
+switch (byteOffset) {
+	case 0:
+		temp = mainMemory[baseAddress] & 0x00FFFFFF;
+		mainMemory[baseAddress] = temp | (rt << 24);
+		break;
+	case 1:
+		temp = mainMemory[baseAddress] & 0xFF00FFFF;
+		mainMemory[baseAddress] = temp | (rt << 16);
+		break;
+	case 2:
+		temp = mainMemory[baseAddress] & 0xFFFF00FF;
+		mainMemory[baseAddress] = temp | (rt << 8);
+		break;
+	case 3:
+		temp = mainMemory[baseAddress] & 0xFFFFFF00;
+		mainMemory[baseAddress] = temp | rt;
+}
+
+
+
+//////////////// store halfword 
+sh rt, offset(rs)
+
+baseAddress = (rs+offset)>>2;
+byteOffset = (rs+offset)%2;
+
+switch (byteOffset) {
+	case 0:
+		temp = mainMemory[baseAddress] & 0x0000FFFF;
+		mainMemory[baseAddress] = temp | (rt << 16);
+		break;
+	case 1:
+		temp = mainMemory[baseAddress] & 0xFFFF0000;
+		mainMemory[baseAddress] = temp | rt;
+}
+
+
+
+
+//////////////// load byte logic
+lb rt, offset(rs)
+
+baseAddress = (rs+offset)>>2;
+byteOffset = (rs+offset)%4;
+
+switch (byteOffset) {
+	case 0:
+		rt = mainMemory[baseAddress] & 0xFF000000;
+		break;
+	case 1:
+		rt = mainMemory[baseAddress] & 0x00FF0000;
+		break;
+	case 2:
+		rt = mainMemory[baseAddress] & 0x0000FF00;
+		break;
+	case 3:
+		rt = mainMemory[baseAddress] & 0x000000FF;
+}
+
+
+
+
+//////////////// load halfword 
+lh rt, offset(rs)
+
+baseAddress = (rs+offset)>>2;
+byteOffset = (rs+offset)%2;
+
+switch (byteOffset) {
+	case 0:
+		rt = mainMemory[baseAddress] & 0xFFFF0000;
+		break;
+	case 1:
+		rt = mainMemory[baseAddress] & 0x0000FFFF;
+}
+
+
+
+
