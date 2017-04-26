@@ -34,14 +34,11 @@ int main()
     int i = 0;
 
     Initialize_Simulation_Memory();
-    clear_shadow();
+    clear_pipe();
 
 	  $pc = memory[5];
-	  printf("pc = %d\n",$pc);
 	  $sp = memory[0];
-	  printf("sp = %d\n", $sp);
 	  $fp = memory[1];
-	  printf("fp = %d\n", $fp);
 
         R[29]=$sp;
         R[30] = $fp;
