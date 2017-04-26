@@ -1,19 +1,22 @@
 #include "Load_Program.h"
 #include "pipe_registers.h"
 #include <stdbool.h>
+
 int cycle_count=0;
+
 bool stallPipe_RS = false;
 bool stallPipe_RT = false;
-
 bool send_RS = false;
 bool send_RT = false;
 
+bool load = false;
+
+
+
 bool jump = false;
-
-
 bool branch = false;
 bool check_branch = false;
-bool first_pass = true;
+
 unsigned int count_down = 4;
 
 bool forward_Rs_ex = false;
@@ -36,9 +39,6 @@ int32_t R[31] ={0};
 
 void IF()
 {
-
-
-  //  printf("Current PC: %u",$pc);
 
     // initialize all instruction fields to zero/false
     IF_ID_shadow.id_inst.opcode =  ( ( (memory[$pc]) & opcode_mask) >> 26 );
@@ -64,6 +64,9 @@ void IF()
 // Read registers 2nd half clock cycle
 void ID()
 {
+     if(count_down > 3)
+        return;
+
     ID_EX_shadow.ex_inst = IF_ID.id_inst;
 
     switch(IF_ID.id_inst.opcode) {
@@ -80,9 +83,12 @@ void ID()
 
         ID_EX_shadow.RegisterRs = ( (memory[IF_ID.id_pc] & rs_mask) >> 21);
         ID_EX_shadow.RegisterRt= ( (memory[IF_ID.id_pc] & rt_mask) >> 16);
-
         ID_EX_shadow.RegisterRd = ((memory[IF_ID.id_pc] & rd_mask) >> 11);
         ID_EX_shadow.dest_rd = ((memory[IF_ID.id_pc] & rd_mask) >> 11);
+
+        ID_EX_shadow.ex_inst.rt = R[ID_EX_shadow.RegisterRt];
+        ID_EX_shadow.ex_inst.rs = R[ID_EX_shadow.RegisterRs];
+        ID_EX_shadow.ex_inst.rd = R[ID_EX_shadow.RegisterRd];
 
         break;
 
@@ -146,10 +152,14 @@ void ID()
         ID_EX_shadow.RegisterRd = 0;
         ID_EX_shadow.memRead = false;
 
+        ID_EX_shadow.ex_inst.rt = R[ID_EX_shadow.RegisterRt];
+        ID_EX_shadow.ex_inst.rs = R[ID_EX_shadow.RegisterRs];
+
         if( (IF_ID.id_inst.opcode == 0x24) || (IF_ID.id_inst.opcode == 0x25) || (IF_ID.id_inst.opcode == 0x23) )
         {
             ID_EX_shadow.memRead = true;
         }
+
 
         break;
 
@@ -191,9 +201,7 @@ void ID()
     case 0x2    :
                         ID_EX_shadow.ex_inst.Jform = true;
                         ID_EX_shadow.ex_inst.jImm = ( (memory[IF_ID.id_pc] & imm_mask_j));
-                        //                  printf("Operation: jump \n");
                         $pc = (IF_ID.next_pc & 0xF0000000) | (ID_EX_shadow.ex_inst.jImm );
-        //              printf("\n jump address: %x\n",  hold_branch_address);
                         jump = true;
                         break;
 
@@ -204,7 +212,6 @@ void ID()
         ID_EX_shadow.ex_inst.Jform = true;
         ID_EX_shadow.ex_inst.jImm = ( (memory[IF_ID.id_pc] & imm_mask_j));
         R[31] = (IF_ID.next_pc+1) << 2;
-      //                  printf("\n Operation: jal, store next pc = %x \n",R[31]);
         $pc = (IF_ID.next_pc & 0xF0000000) | (ID_EX_shadow.ex_inst.jImm);
         printf("\nJAL   jump address: %d\n",  $pc);
 
@@ -214,12 +221,21 @@ void ID()
     ID_EX_shadow.ex_pc = IF_ID.id_pc;
     ID_EX_shadow.next_pc = IF_ID.next_pc;
 
+        if(ID_EX_shadow.ex_inst.Rform == true)
+    {
+        ID_EX_shadow.dest_reg = ID_EX_shadow.RegisterRd;
+    }
+    if(ID_EX_shadow.ex_inst.Iform == true)
+    {
+        ID_EX_shadow.dest_reg = ID_EX_shadow.RegisterRt;
+    }
+
 
 if(check_branch == true)
 {
      // hazard protection and forwarding for branch
 
-     // if lw then branch, insert two bubbles
+     ID_EX_shadow.dest_reg = 0;
 
      if( (ID_EX_shadow.RegisterRs ==  ID_EX.dest_reg) && (ID_EX.dest_reg != 0 ) )
      {
@@ -369,14 +385,7 @@ check_branch = false;
             printf("JR\n");
        }
 
-    if(ID_EX_shadow.ex_inst.Rform == true)
-    {
-        ID_EX_shadow.dest_reg = ID_EX_shadow.RegisterRd;
-    }
-    if(ID_EX_shadow.ex_inst.Iform == true)
-    {
-        ID_EX_shadow.dest_reg = ID_EX_shadow.RegisterRt;
-    }
+
 
 }
 
@@ -386,6 +395,8 @@ check_branch = false;
 // nop performs sll 0,0,0
 void EX()
 {
+      if(count_down > 2)
+        return;
 
     EX_MEM_shadow.mem_inst.rt = R[ID_EX.RegisterRt];
     EX_MEM_shadow.mem_inst.rs = R[ID_EX.RegisterRs];
@@ -402,6 +413,13 @@ void EX()
     EX_MEM_shadow.RegisterRt = ID_EX.RegisterRt;
 
     EX_MEM_shadow.memRead = ID_EX.memRead;
+
+
+forward_Rs_ex = false;
+forward_Rt_ex = false;
+forward_Rs_mem = false;
+forward_Rt_mem = false;
+
 
         // Check if data forwarding is needed
     if( (EX_MEM.RegWrite == true ) && (EX_MEM.dest_reg !=0) && (EX_MEM.dest_reg == ID_EX.RegisterRs) )
@@ -425,7 +443,7 @@ void EX()
     }
      if((MEM_WB.RegWrite == true) && (MEM_WB.dest_reg !=0) && (MEM_WB.dest_reg == ID_EX.RegisterRt))
     {
-        forward_Rt_ex = true;
+        forward_Rt_mem = true;
         mem_rd_rt = MEM_WB.wb_alu_result;
         MEM_WB.RegWrite = false;
     }
@@ -437,23 +455,23 @@ void EX()
 
                 if (forward_Rs_ex == true)
                     {
-                        ID_EX.ex_inst.rs = rd_to_rs;
+                        EX_MEM_shadow.mem_inst.rs = rd_to_rs;
                         forward_Rs_ex = false;
                     }
 
                 if (forward_Rt_ex == true)
                     {
-                        ID_EX.ex_inst.rt = rd_to_rt;
+                        EX_MEM_shadow.mem_inst.rt = rd_to_rt;
                         forward_Rt_ex = false;
                     }
                 if (forward_Rs_mem == true)
                 {
-                    ID_EX.ex_inst.rs = mem_rd_rs;
+                    EX_MEM_shadow.mem_inst.rs = mem_rd_rs;
                     forward_Rs_mem = false;
                 }
                 if(forward_Rt_mem == true)
                 {
-                    ID_EX.ex_inst.rt = mem_rd_rt;
+                    EX_MEM_shadow.mem_inst.rt = mem_rd_rt;
                     forward_Rt_mem = false;
                 }
 
@@ -463,88 +481,63 @@ void EX()
                     //  add
                     case 0x20:
 
-          //              printf("\n OPERATION: add \n");
-                        EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs  + ID_EX.ex_inst.rt;
-            //            printf(" %d = %d + %d \n", EX_MEM_shadow.alu_result,ID_EX.ex_inst.rs,ID_EX.ex_inst.rt );
+                        EX_MEM_shadow.alu_result = EX_MEM_shadow.mem_inst.rs  + EX_MEM_shadow.mem_inst.rt;
                         break;
 
                     //  addu
                     case 0x21:
 
-              //          printf("\n OPERATION: addu \n");
-                        EX_MEM_shadow.alu_result = (unsigned int)ID_EX.ex_inst.rs + (unsigned int)ID_EX.ex_inst.rt;
-                //        printf(" %u = %u + %u \n", EX_MEM_shadow.alu_result, (unsigned int)ID_EX.ex_inst.rs, (unsigned int)ID_EX.ex_inst.rt );
-
+                        EX_MEM_shadow.alu_result = EX_MEM_shadow.mem_inst.rs + EX_MEM_shadow.mem_inst.rt;
                         break;
 
                     //  and
                     case 0x24:
-                  //       printf("\n OPERATION: and \n");
-                        EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs & ID_EX.ex_inst.rt;
-                    //    printf(" %d = %d & %d \n", EX_MEM_shadow.alu_result, ID_EX.ex_inst.rs, ID_EX.ex_inst.rt );
+                        EX_MEM_shadow.alu_result = EX_MEM_shadow.mem_inst.rs & EX_MEM_shadow.mem_inst.rt;
                         break;
 
                     // nor
                     case 0x27:
-                      //   printf("\n OPERATION: nor \n");
-                        EX_MEM_shadow.alu_result = !(ID_EX.ex_inst.rs | ID_EX.ex_inst.rt);
-                        //printf(" %d = !(%d | %d) \n", EX_MEM_shadow.alu_result, ID_EX.ex_inst.rs, ID_EX.ex_inst.rt );
+                        EX_MEM_shadow.alu_result = !(EX_MEM_shadow.mem_inst.rs | EX_MEM_shadow.mem_inst.rt);
                         break;
 
                     // or
                     case 0x25:
-                    //    printf("\n OPERATION: or \n");
-                        EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs | ID_EX.ex_inst.rt ;
-                      //  printf(" %d = %d | %d \n", EX_MEM_shadow.alu_result, ID_EX.ex_inst.rs, ID_EX.ex_inst.rt );
+                        EX_MEM_shadow.alu_result = EX_MEM_shadow.mem_inst.rs | EX_MEM_shadow.mem_inst.rt ;
                         break;
 
                     // sll
                     case 0:
-                       //  printf("\n OPERATION: sll \n");
-                        EX_MEM_shadow.alu_result = ID_EX.ex_inst.rt << ID_EX.ex_inst.shamt;
-                         //printf(" %d = %d << %d \n", EX_MEM_shadow.alu_result, ID_EX.ex_inst.rt, ID_EX.ex_inst.shamt );
+                        EX_MEM_shadow.alu_result = EX_MEM_shadow.mem_inst.rt << ID_EX.ex_inst.shamt;
                         break;
 
                     // srl
                     case 2:
-                      //   printf("\n OPERATION: srl \n");
-                        EX_MEM_shadow.alu_result = ID_EX.ex_inst.rt >> ID_EX.ex_inst.shamt;
-                        //printf(" %d = %d >> %d \n", EX_MEM_shadow.alu_result, ID_EX.ex_inst.rt, ID_EX.ex_inst.shamt );
+                        EX_MEM_shadow.alu_result = EX_MEM_shadow.mem_inst.rt >> ID_EX.ex_inst.shamt;
                         break;
 
                     // sub
                     case 0x22:
-             //           printf("\n OPERATION: sub \n");
-                        EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs - ID_EX.ex_inst.rt;
-               //         printf(" %d = %d - %d \n", EX_MEM_shadow.alu_result, ID_EX.ex_inst.rs, ID_EX.ex_inst.rt );
+                        EX_MEM_shadow.alu_result = EX_MEM_shadow.mem_inst.rs - EX_MEM_shadow.mem_inst.rt;
                         break;
 
                     //  subu
                     case 0x23:
-                 //        printf("\n OPERATION: subu \n");
-                        EX_MEM_shadow.alu_result = (unsigned int)ID_EX.ex_inst.rs - (unsigned int)ID_EX.ex_inst.rt;
-                   //     printf(" %u = %u - %u \n", EX_MEM_shadow.alu_result, (unsigned int)ID_EX.ex_inst.rs, (unsigned int)ID_EX.ex_inst.rt );
+                        EX_MEM_shadow.alu_result = EX_MEM_shadow.mem_inst.rs - EX_MEM_shadow.mem_inst.rt;
                         break;
 
                     // xor
                     case 0x26:
-                     //   printf("\n OPERATION: xor \n");
-                        EX_MEM_shadow.alu_result = (ID_EX.ex_inst.rs != ID_EX.ex_inst.rt);
-                       // printf(" %d = %d != %d \n", EX_MEM_shadow.alu_result, ID_EX.ex_inst.rs, ID_EX.ex_inst.rt );
+                        EX_MEM_shadow.alu_result = (EX_MEM_shadow.mem_inst.rs != EX_MEM_shadow.mem_inst.rt);
                         break;
 
                     // slt
                     case 0x2a:
-                   //      printf("\n OPERATION: slt \n");
-                        EX_MEM_shadow.alu_result = (ID_EX.ex_inst.rs < ID_EX.ex_inst.rt) ? 1 : 0 ;
-                     //   printf(" %d = %d < %d \n", EX_MEM_shadow.alu_result, ID_EX.ex_inst.rs, ID_EX.ex_inst.rt );
+                        EX_MEM_shadow.alu_result = (EX_MEM_shadow.mem_inst.rs < EX_MEM_shadow.mem_inst.rt) ? 1 : 0 ;
                         break;
 
                     //  sltu
                     case 0x2b:
-                       //  printf("\n OPERATION: sltu \n");
-                        EX_MEM_shadow.alu_result = ((unsigned int)ID_EX.ex_inst.rs < (unsigned int)ID_EX.ex_inst.rt) ? 1 : 0 ;
-                         //printf(" %u = %u < %u \n", EX_MEM_shadow.alu_result, (unsigned int)ID_EX.ex_inst.rs, (unsigned int)ID_EX.ex_inst.rt );
+                        EX_MEM_shadow.alu_result = (EX_MEM_shadow.mem_inst.rs < EX_MEM_shadow.mem_inst.rt) ? 1 : 0 ;
                         break;
 
                 // end switch
@@ -554,137 +547,120 @@ void EX()
         case 8:
             if (forward_Rs_ex == true)
                     {
-                        ID_EX.ex_inst.rs = rd_to_rs;
+                        EX_MEM_shadow.mem_inst.rs = rd_to_rs;
                         forward_Rs_ex = false;
                     }
             if (forward_Rs_mem == true)
                 {
-                    ID_EX.ex_inst.rs = mem_rd_rs;
+                    EX_MEM_shadow.mem_inst.rs = mem_rd_rs;
                     forward_Rs_mem = false;
                 }
 
             EX_MEM_shadow.RegWrite = true;
-     //       printf("\n OPERATION: addi \n");
-            EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs + ID_EX.ex_signext;
-       //     printf(" %d = %d + %d \n", EX_MEM_shadow.alu_result, ID_EX.ex_inst.rs, ID_EX.ex_signext );
+            EX_MEM_shadow.alu_result = EX_MEM_shadow.mem_inst.rs + ID_EX.ex_signext;
             break;
 
         // addiu
         case 9:
             if (forward_Rs_ex == true)
                     {
-                        ID_EX.ex_inst.rs = rd_to_rs;
+                        EX_MEM_shadow.mem_inst.rs = rd_to_rs;
                         forward_Rs_ex = false;
                     }
             if (forward_Rs_mem == true)
                 {
-                    ID_EX.ex_inst.rs = mem_rd_rs;
+                    EX_MEM_shadow.mem_inst.rs = mem_rd_rs;
                     forward_Rs_mem = false;
                 }
             EX_MEM_shadow.RegWrite = true;
-         //   printf("\n OPERATION: addiu \n");
-            EX_MEM_shadow.alu_result = (unsigned int)ID_EX.ex_inst.rs + ID_EX.ex_signext;
-           // printf(" %d = %d + %d \n", EX_MEM_shadow.alu_result, ID_EX.ex_inst.rs, ID_EX.ex_inst.iImm );
+            EX_MEM_shadow.alu_result = EX_MEM_shadow.mem_inst.rs + ID_EX.ex_signext;
             break;
 
         //  andi
         case 0xc:
             if (forward_Rs_ex == true)
                     {
-                        ID_EX.ex_inst.rs = rd_to_rs;
+                        EX_MEM_shadow.mem_inst.rs = rd_to_rs;
                         forward_Rs_ex = false;
                     }
             if (forward_Rs_mem == true)
                 {
-                    ID_EX.ex_inst.rs = mem_rd_rs;
+                    EX_MEM_shadow.mem_inst.rs = mem_rd_rs;
                     forward_Rs_mem = false;
                 }
             EX_MEM_shadow.RegWrite = true;
-    //        printf("\n OPERATION: andi\n");
-            EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs & ID_EX.ex_signext ;
-      //       printf(" %d = %d & %d \n", EX_MEM_shadow.alu_result, ID_EX.ex_inst.rs, ID_EX.ex_signext );
+            EX_MEM_shadow.alu_result = EX_MEM_shadow.mem_inst.rs & ID_EX.ex_signext ;
             break;
 
         // ori
         case 0xd:
             if (forward_Rs_ex == true)
                     {
-                        ID_EX.ex_inst.rs = rd_to_rs;
+                        EX_MEM_shadow.mem_inst.rs = rd_to_rs;
                         forward_Rs_ex = false;
                     }
             if (forward_Rs_mem == true)
                 {
-                    ID_EX.ex_inst.rs = mem_rd_rs;
+                    EX_MEM_shadow.mem_inst.rs = mem_rd_rs;
                     forward_Rs_mem = false;
                 }
             EX_MEM_shadow.RegWrite = true;
-        //    printf("\n OPERATION: ori\n");
-            EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs | ID_EX.ex_signext;
-          //  printf(" %d = %d | %d \n", EX_MEM_shadow.alu_result, ID_EX.ex_inst.rs, ID_EX.ex_signext );
+            EX_MEM_shadow.alu_result = EX_MEM_shadow.mem_inst.rs | ID_EX.ex_signext;
             break;
 
         // xori
         case 0xe:
             if (forward_Rs_ex == true)
                     {
-                        ID_EX.ex_inst.rs = rd_to_rs;
+                        EX_MEM_shadow.mem_inst.rs = rd_to_rs;
                         forward_Rs_ex = false;
                     }
             if (forward_Rs_mem == true)
                 {
-                    ID_EX.ex_inst.rs = mem_rd_rs;
+                    EX_MEM_shadow.mem_inst.rs = mem_rd_rs;
                     forward_Rs_mem = false;
                 }
             EX_MEM_shadow.RegWrite = true;
-        //    printf("\n OPERATION: xori\n");
-            EX_MEM_shadow.alu_result = (ID_EX.ex_inst.rs != ID_EX.ex_signext);
-          //  printf(" %d = %d != %d \n", EX_MEM_shadow.alu_result, ID_EX.ex_inst.rs, ID_EX.ex_signext );
+            EX_MEM_shadow.alu_result = (EX_MEM_shadow.mem_inst.rs != ID_EX.ex_signext);
             break;
 
         // lui
         case 0xf:
             EX_MEM_shadow.RegWrite = true;
-            //printf("\n OPERATION: lui\n");
-         //   printf("immediate value: %u\n", ID_EX.ex_inst.iImm);
             EX_MEM_shadow.alu_result = (ID_EX.ex_inst.iImm);
             EX_MEM_shadow.alu_result = ((EX_MEM_shadow.alu_result << 16) & 0xFFFF0000 );
-           // printf("alu result: %d = %d << 16  \n", EX_MEM_shadow.alu_result, ID_EX.ex_inst.iImm );
             break;
 
         // slti
         case 0xa:
             if (forward_Rs_ex == true)
                     {
-                        ID_EX.ex_inst.rs = rd_to_rs;
+                        EX_MEM_shadow.mem_inst.rs = rd_to_rs;
                         forward_Rs_ex = false;
                     }
             if (forward_Rs_mem == true)
                 {
-                    ID_EX.ex_inst.rs = mem_rd_rs;
+                    EX_MEM_shadow.mem_inst.rs = mem_rd_rs;
                     forward_Rs_mem = false;
                 }
             EX_MEM_shadow.RegWrite = true;
-     //       printf("\n OPERATION: slti\n");
-            EX_MEM_shadow.alu_result = (ID_EX.ex_inst.rs < ID_EX.ex_signext) ? 1 : 0 ;
-       //     printf("result = %d < %d \n",ID_EX.ex_inst.rs, ID_EX.ex_signext);
+            EX_MEM_shadow.alu_result = (EX_MEM_shadow.mem_inst.rs < ID_EX.ex_signext) ? 1 : 0 ;
             break;
 
         // sltiu
         case 0xb:
             if (forward_Rs_ex == true)
                     {
-                        ID_EX.ex_inst.rs = rd_to_rs;
+                        EX_MEM_shadow.mem_inst.rs = rd_to_rs;
                         forward_Rs_ex = false;
                     }
             if (forward_Rs_mem == true)
                 {
-                    ID_EX.ex_inst.rs = mem_rd_rs;
+                    EX_MEM_shadow.mem_inst.rs = mem_rd_rs;
                     forward_Rs_mem = false;
                 }
             EX_MEM_shadow.RegWrite = true;
-         //   printf("\n OPERATION: sltiu\n");
-            EX_MEM_shadow.alu_result = ((unsigned int)ID_EX.ex_inst.rs < (unsigned int)ID_EX.ex_inst.iImm) ? 1 : 0 ;
-           // printf("result = %u < %u \n",ID_EX.ex_inst.rs, (unsigned int)ID_EX.ex_inst.iImm);
+            EX_MEM_shadow.alu_result = (EX_MEM_shadow.mem_inst.rs < (unsigned int)ID_EX.ex_inst.iImm) ? 1 : 0 ;
             break;
 
 
@@ -709,18 +685,16 @@ void EX()
 
             if (forward_Rs_ex == true)
                     {
-                        ID_EX.ex_inst.rs = rd_to_rs;
+                        EX_MEM_shadow.mem_inst.rs = rd_to_rs;
                         forward_Rs_ex = false;
                     }
             if (forward_Rs_mem == true)
                 {
-                    ID_EX.ex_inst.rs = mem_rd_rs;
+                    EX_MEM_shadow.mem_inst.rs = mem_rd_rs;
                     forward_Rs_mem = false;
                 }
             EX_MEM_shadow.RegWrite = true;
-       //     printf(" \n load or store instruction\n");
-            EX_MEM_shadow.alu_result = ID_EX.ex_inst.rs + ID_EX.ex_signext ;
-         //   printf("\n\n address calculated: %d = %d + %d \n\n",EX_MEM_shadow.alu_result,ID_EX.ex_inst.rs,ID_EX.ex_signext);
+            EX_MEM_shadow.alu_result = EX_MEM_shadow.mem_inst.rs + ID_EX.ex_signext ;
             break;
 
     // opcode switch
@@ -743,6 +717,9 @@ void EX()
 // Access memory operand
 void MEM()
 {
+    if(count_down > 1)
+        return;
+
     // do nothing for R-format instructions (wait for WB() )
 
     MEM_WB_shadow.wb_pc = EX_MEM.mem_pc;
@@ -766,62 +743,63 @@ void MEM()
     else
          MEM_WB_shadow.dest_reg = EX_MEM.RegisterRd;
 
-    MEM_WB_shadow.wb_inst = EX_MEM.mem_inst;
 
+    MEM_WB_shadow.wb_inst = EX_MEM.mem_inst;
+    MEM_WB_shadow.RegWrite = EX_MEM.RegWrite;
 
     unsigned int index = (EX_MEM.alu_result >> 2);
-
-  //  printf("\n Data MemAddr Corrected : %d \n", index);
-    MEM_WB_shadow.RegWrite = EX_MEM.RegWrite;
 
     switch(EX_MEM.mem_inst.opcode)
     {
         //  lbu
         case 0x24:
-    //        printf("Confirm Operation: lbu\n");
             MEM_WB_shadow.read_data = (memory[index] & 0x000000FF );
-      //      printf("data read: %u\n",MEM_WB_shadow.read_data);
-            MEM_WB_shadow.dest_reg = EX_MEM.mem_inst.rt;
-        //    printf("destination register: %u\n", MEM_WB_shadow.dest_reg);
             break;
 
         //  lhu
         case 0x25:
-          //   printf("Confirm Operation: lhu\n");
             MEM_WB_shadow.read_data = (memory[index] & 0x0000FFFF );
-            //printf("data read: %u\n",MEM_WB_shadow.read_data);
-            MEM_WB_shadow.dest_reg = EX_MEM.mem_inst.rt;
-        //    printf("destination register: %u\n", MEM_WB_shadow.dest_reg);
             break;
 
         //  lw
         case 0x23:
-          //  printf("Confirm Operation: lw \n");
             MEM_WB_shadow.read_data = memory[index];
-            //printf("data read: %u\n",MEM_WB_shadow.read_data);
-            MEM_WB_shadow.dest_reg = EX_MEM.mem_inst.rt;
-         //   printf("destination register: %u\n", MEM_WB_shadow.dest_rt);
             break;
 
         // sb
         case 0x28:
-           // printf("Confirm Operation: sb\n");
+
+            // load store hazard
+            if ( (MEM_WB_shadow.dest_reg == MEM_WB.dest_reg) && (load == true ) )
+            {
+                EX_MEM.mem_inst.rt = MEM_WB.read_data;
+            }
+            load = false;
             memory[index] = ( EX_MEM.mem_inst.rt & 0x000000FF );
-      //      printf("Data Written : %u", memory[index]);
             break;
 
         // sh
         case 0x29:
-        //    printf("Confirm Operation: sh\n");
+
+             // load store hazard
+            if ( (MEM_WB_shadow.dest_reg == MEM_WB.dest_reg) && (load == true ) )
+            {
+                EX_MEM.mem_inst.rt = MEM_WB.read_data;
+            }
+            load = false;
             memory[index] = ( EX_MEM.mem_inst.rt & 0x0000FFFF );
-          //  printf("Data Written : %u", memory[index]);
             break;
 
         // sw
         case 0x2b:
-          //  printf("Confirm Operation: sw\n");
+
+             // load store hazard
+            if ( (MEM_WB_shadow.dest_reg == MEM_WB.dest_reg) && (load == true ) )
+            {
+                EX_MEM.mem_inst.rt = MEM_WB.read_data;
+            }
+            load = false;
             memory[index] = EX_MEM.mem_inst.rt;
-            //printf("Data Written : %u", memory[index]);
             break ;
     }
 
@@ -837,6 +815,12 @@ void WB()
 
     if(count_down != 0)
         return;
+
+//    if ( (MEM_WB.dest_reg == 0) && (MEM_WB.wb_alu_result != 0) )
+//        return;
+
+//    if ( (MEM_WB.dest_reg == 0) && (MEM_WB.read_data != 0) )
+//        return;
 
     switch(MEM_WB.wb_inst.opcode)
     {
@@ -881,8 +865,7 @@ void WB()
                     //  sltu
                     case 0x2b:
 
-                                R[ MEM_WB.dest_rd] = MEM_WB.wb_alu_result;
- //                               printf("\n\n WB(): destination reg = %u   value written = %u\n\n",MEM_WB.dest_rd, MEM_WB.wb_alu_result );
+                                R[ MEM_WB.dest_reg] = MEM_WB.wb_alu_result;
                                 break;
 
                 // end switch
@@ -913,8 +896,7 @@ void WB()
         // sltiu
         case 0xb:
 
-                    R[ MEM_WB.dest_rt ] = MEM_WB.wb_alu_result;
-   //                 printf("\n\n WB(): destination reg = %u   value written = %u\n\n",MEM_WB.dest_rt, MEM_WB.wb_alu_result );
+                    R[ MEM_WB.dest_reg ] = MEM_WB.wb_alu_result;
                     break;
 
         /// all load write back to register rt (.dest_reg)
@@ -926,8 +908,8 @@ void WB()
 
         //  lw
         case 0x23:
-                  R[ MEM_WB.dest_rt] = MEM_WB.read_data;
-     //             printf("\n\n WB(): destination reg = %u   value written = %u\n\n",MEM_WB.dest_rt, MEM_WB.read_data);
+                  R[ MEM_WB.dest_reg] = MEM_WB.read_data;
+                  load = true;
                   break;
     }
 
@@ -958,6 +940,13 @@ else
     ID_EX.ex_inst.shamt = 0;
     ID_EX.ex_signext = 0;
 
+    ID_EX.dest_rd = 0;
+    ID_EX.dest_rt = 0;
+
+    ID_EX.RegisterRd = 0;
+    ID_EX.RegisterRs = 0;
+    ID_EX.RegisterRt = 0;
+
     if(stallPipe_RS == true)
     {
         send_RS = true;
@@ -983,7 +972,9 @@ void Execute_Clock_Cycle()
    MEM();
 
    if(count_down > 0)
-    count_down = count_down-1;
+    {
+        count_down = count_down-1;
+    }
 
    Move_Shadow_to_Pipeline();
 
@@ -999,16 +990,17 @@ void Execute_Clock_Cycle()
     else
       {
         if((!stallPipe_RS) && (!stallPipe_RT))
-        {$pc = $pc+1;}
+        {$pc = $pc+1;
+        }
 
-        stallPipe_RS = false;
-        stallPipe_RT = false;
+             stallPipe_RS = false;
+             stallPipe_RT = false;
 
         }
 
 }
 
-void clear_shadow()
+void clear_pipe()
 {
     IF_ID_shadow.id_inst.func = 0;
     IF_ID_shadow.id_inst.Iform = false;
@@ -1023,55 +1015,113 @@ void clear_shadow()
     IF_ID_shadow.id_inst.shamt = 0;
     IF_ID_shadow.id_pc = 0;
 
+    IF_ID.id_inst.func = 0;
+    IF_ID.id_inst.Iform = false;
+    IF_ID.id_inst.iImm = 0;
+    IF_ID.id_inst.Jform = false;
+    IF_ID.id_inst.jImm = 0;
+    IF_ID.id_inst.opcode = 0;
+    IF_ID.id_inst.rd = 0;
+    IF_ID.id_inst.Rform = false;
+    IF_ID.id_inst.rs = 0;
+    IF_ID.id_inst.rt = 0;
+    IF_ID.id_inst.shamt = 0;
+    IF_ID.id_pc = 0;
 
-     ID_EX_shadow.ex_inst.func = 0;
+
+    ID_EX_shadow.dest_reg = 0;
+    ID_EX_shadow.ex_inst.func = 0;
     ID_EX_shadow.ex_inst.Iform = false;
     ID_EX_shadow.ex_inst.iImm = 0;
-   ID_EX_shadow.ex_inst.Jform = false;
+    ID_EX_shadow.ex_inst.Jform = false;
     ID_EX_shadow.ex_inst.jImm = 0;
     ID_EX_shadow.ex_inst.opcode = 0;
     ID_EX_shadow.ex_inst.rd = 0;
     ID_EX_shadow.ex_inst.Rform = false;
     ID_EX_shadow.ex_inst.rs = 0;
-   ID_EX_shadow.ex_inst.rt = 0;
-   ID_EX_shadow.ex_inst.shamt = 0;
-   ID_EX_shadow.ex_pc = 0;
-   ID_EX_shadow.ex_signext = 0;
+    ID_EX_shadow.ex_inst.rt = 0;
+    ID_EX_shadow.ex_inst.shamt = 0;
+    ID_EX_shadow.ex_pc = 0;
+    ID_EX_shadow.ex_signext = 0;
 
-   EX_MEM_shadow.alu_result = 0;
-   EX_MEM_shadow.jump_addr = 0;
-   EX_MEM_shadow.mem_branch_addr = 0;
-   EX_MEM_shadow.mem_inst.func = 0;
+    ID_EX.dest_reg = 0;
+    ID_EX.ex_inst.func = 0;
+    ID_EX.ex_inst.Iform = false;
+    ID_EX.ex_inst.iImm = 0;
+    ID_EX.ex_inst.Jform = false;
+    ID_EX.ex_inst.jImm = 0;
+    ID_EX.ex_inst.opcode = 0;
+    ID_EX.ex_inst.rd = 0;
+    ID_EX.ex_inst.Rform = false;
+    ID_EX.ex_inst.rs = 0;
+    ID_EX.ex_inst.rt = 0;
+    ID_EX.ex_inst.shamt = 0;
+    ID_EX.ex_pc = 0;
+    ID_EX.ex_signext = 0;
+
+    EX_MEM_shadow.alu_result = 0;
+    EX_MEM_shadow.mem_inst.func = 0;
     EX_MEM_shadow.mem_inst.Iform = false;
     EX_MEM_shadow.mem_inst.iImm = 0;
-   EX_MEM_shadow.mem_inst.Jform = false;
+    EX_MEM_shadow.mem_inst.Jform = false;
     EX_MEM_shadow.mem_inst.jImm = 0;
     EX_MEM_shadow.mem_inst.opcode = 0;
     EX_MEM_shadow.mem_inst.rd = 0;
     EX_MEM_shadow.mem_inst.Rform = false;
     EX_MEM_shadow.mem_inst.rs = 0;
-   EX_MEM_shadow.mem_inst.rt = 0;
-   EX_MEM_shadow.mem_inst.shamt = 0;
-   EX_MEM_shadow.mem_pc = 0;
-   EX_MEM_shadow.mem_reg2=0;
-   EX_MEM_shadow.zero_branch = 0;
+    EX_MEM_shadow.mem_inst.rt = 0;
+    EX_MEM_shadow.mem_inst.shamt = 0;
+    EX_MEM_shadow.mem_pc = 0;
+    EX_MEM_shadow.dest_reg = 0;
 
+    EX_MEM.alu_result = 0;
+    EX_MEM.mem_inst.func = 0;
+    EX_MEM.mem_inst.Iform = false;
+    EX_MEM.mem_inst.iImm = 0;
+    EX_MEM.mem_inst.Jform = false;
+    EX_MEM.mem_inst.jImm = 0;
+    EX_MEM.mem_inst.opcode = 0;
+    EX_MEM.mem_inst.rd = 0;
+    EX_MEM.mem_inst.Rform = false;
+    EX_MEM.mem_inst.rs = 0;
+    EX_MEM.mem_inst.rt = 0;
+    EX_MEM.mem_inst.shamt = 0;
+    EX_MEM.mem_pc = 0;
+    EX_MEM.dest_reg = 0;
 
-   MEM_WB_shadow.dest_reg = 0;
-   MEM_WB_shadow.read_data = 0;
-   MEM_WB_shadow.wb_alu_result = 0;
-      MEM_WB_shadow.wb_inst.func = 0;
+    MEM_WB_shadow.dest_reg = 0;
+    MEM_WB_shadow.read_data = 0;
+    MEM_WB_shadow.wb_alu_result = 0;
+    MEM_WB_shadow.wb_inst.func = 0;
     MEM_WB_shadow.wb_inst.Iform = false;
     MEM_WB_shadow.wb_inst.iImm = 0;
-   MEM_WB_shadow.wb_inst.Jform = false;
+    MEM_WB_shadow.wb_inst.Jform = false;
     MEM_WB_shadow.wb_inst.jImm = 0;
-   MEM_WB_shadow.wb_inst.opcode = 0;
+    MEM_WB_shadow.wb_inst.opcode = 0;
     MEM_WB_shadow.wb_inst.rd = 0;
     MEM_WB_shadow.wb_inst.Rform = false;
     MEM_WB_shadow.wb_inst.rs = 0;
-   MEM_WB_shadow.wb_inst.rt = 0;
-   MEM_WB_shadow.wb_inst.shamt = 0;
-   MEM_WB_shadow.wb_pc = 0;
+    MEM_WB_shadow.wb_inst.rt = 0;
+    MEM_WB_shadow.wb_inst.shamt = 0;
+    MEM_WB_shadow.wb_pc = 0;
+    MEM_WB_shadow.dest_reg = 0;
+
+    MEM_WB.dest_reg = 0;
+    MEM_WB.read_data = 0;
+    MEM_WB.wb_alu_result = 0;
+    MEM_WB.wb_inst.func = 0;
+    MEM_WB.wb_inst.Iform = false;
+    MEM_WB.wb_inst.iImm = 0;
+    MEM_WB.wb_inst.Jform = false;
+    MEM_WB.wb_inst.jImm = 0;
+    MEM_WB.wb_inst.opcode = 0;
+    MEM_WB.wb_inst.rd = 0;
+    MEM_WB.wb_inst.Rform = false;
+    MEM_WB.wb_inst.rs = 0;
+    MEM_WB.wb_inst.rt = 0;
+    MEM_WB.wb_inst.shamt = 0;
+    MEM_WB.wb_pc = 0;
+    MEM_WB.dest_reg = 0;
 
 }
 
