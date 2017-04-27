@@ -4,10 +4,8 @@
 
 int cycle_count=0;
 
-bool stall_load_RS = false;
-bool stall_load_RT = false;
-bool load_fix_RS = false;
-bool load_fix_RT = false;
+bool stall_load = false;
+bool branch_extra = false;
 
 bool stallPipe_RS = false;
 bool stallPipe_RT = false;
@@ -15,7 +13,7 @@ bool send_RS = false;
 bool send_RT = false;
 
 bool load = false;
-
+bool check_load_hazard = false;
 
 
 bool jump = false;
@@ -94,26 +92,6 @@ void ID()
         ID_EX_shadow.ex_inst.rs = R[ID_EX_shadow.RegisterRs];
         ID_EX_shadow.ex_inst.rd = R[ID_EX_shadow.RegisterRd];
 
-        if((ID_EX.memRead == true) && (ID_EX_shadow.RegisterRs == ID_EX.RegisterRt) && (ID_EX.RegisterRt != 0) )
-        {
-            stall_load_RS = true;
-        }
-        if((ID_EX.memRead == true) && (ID_EX_shadow.RegisterRt == ID_EX.RegisterRt) && (ID_EX.RegisterRt != 0) )
-        {
-            stall_load_RT = true;
-        }
-
-        if(load_fix_RS == true)
-        {
-            ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
-            load_fix_RS = false;
-        }
-        if(load_fix_RT == true )
-        {
-            ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
-            load_fix_RT = false;
-        }
-
         break;
 
 /**************************     I-format Instructions ******************************************/
@@ -183,18 +161,9 @@ void ID()
         if( (IF_ID.id_inst.opcode == 0x24) || (IF_ID.id_inst.opcode == 0x25) || (IF_ID.id_inst.opcode == 0x23) )
         {
             ID_EX_shadow.memRead = true;
+            check_load_hazard = true;
         }
 
-         if((ID_EX.memRead == true) && (ID_EX_shadow.RegisterRs == ID_EX.RegisterRt) && (ID_EX.RegisterRt != 0) )
-        {
-            stall_load_RS = true;
-        }
-
-        if(load_fix_RS == true)
-        {
-            ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
-            load_fix_RS = false;
-        }
 
         break;
 
@@ -228,17 +197,7 @@ void ID()
         ID_EX_shadow.ex_inst.rt = R[ID_EX_shadow.RegisterRt];
 
         check_branch = true;
-
-         if((ID_EX.memRead == true) && (ID_EX_shadow.RegisterRs == ID_EX.RegisterRt) && (ID_EX.RegisterRt != 0) )
-        {
-            stall_load_RS = true;
-        }
-
-        if(load_fix_RS == true)
-        {
-            ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
-            load_fix_RS = false;
-        }
+        branch_extra = true;
 
         break;
 
@@ -429,6 +388,26 @@ check_branch = false;
 
 
 }
+
+        if((EX_MEM.memRead == true) && (check_load_hazard==true) && (EX_MEM.dest_reg != 0) )
+        {
+            if( (ID_EX_shadow.RegisterRs == EX_MEM.dest_reg) || (ID_EX_shadow.RegisterRt == EX_MEM.dest_reg) )
+            {
+                stall_load = true;
+            }
+        }
+        if((ID_EX.memRead == true) && (check_load_hazard == true) && (ID_EX.dest_reg != 0) )
+        {
+            if( (ID_EX_shadow.RegisterRs == ID_EX.dest_reg) || (ID_EX_shadow.RegisterRt == ID_EX.dest_reg) )
+            {
+                stall_load = true;
+            }
+        }
+
+
+
+
+
             // check for jump register
     if((IF_ID.id_inst.opcode == 0) & (ID_EX_shadow.ex_inst.func == 8) )
        {
@@ -757,8 +736,14 @@ forward_Rt_mem = false;
         EX_MEM_shadow.dest_reg = ID_EX.RegisterRt;
 
     }
-    else
+    else if (ID_EX.ex_inst.Rform == true )
           EX_MEM_shadow.dest_reg = ID_EX.RegisterRd;
+
+    else if ((ID_EX.ex_inst.Rform == true) || (branch_extra == true) )
+    {
+        EX_MEM_shadow.dest_reg = 0;
+        branch_extra = false;
+    }
 
 
 
@@ -791,8 +776,11 @@ void MEM()
         MEM_WB_shadow.dest_reg = EX_MEM.RegisterRt;
 
     }
-    else
+    else if (EX_MEM.mem_inst.Rform == true)
          MEM_WB_shadow.dest_reg = EX_MEM.RegisterRd;
+
+    else if (EX_MEM.mem_inst.Jform == true)
+        MEM_WB_shadow.dest_reg = 0;
 
 
     MEM_WB_shadow.wb_inst = EX_MEM.mem_inst;
@@ -805,16 +793,19 @@ void MEM()
         //  lbu
         case 0x24:
             MEM_WB_shadow.read_data = (memory[index] & 0x000000FF );
+            check_load_hazard = false;
             break;
 
         //  lhu
         case 0x25:
             MEM_WB_shadow.read_data = (memory[index] & 0x0000FFFF );
+            check_load_hazard = false;
             break;
 
         //  lw
         case 0x23:
             MEM_WB_shadow.read_data = memory[index];
+            check_load_hazard = false;
             break;
 
         // sb
@@ -970,7 +961,7 @@ void WB()
 
 void Move_Shadow_to_Pipeline()
 {
-if ((!stallPipe_RS) && (!stallPipe_RT) && (!stall_load_RS) && (!stall_load_RT)) {
+if ((!stallPipe_RS) && (!stallPipe_RT) && (!stall_load) ) {
 
         IF_ID = IF_ID_shadow;
 
@@ -1008,14 +999,6 @@ else
     {
         send_RT = true;
     }
-    if(stall_load_RS == true)
-    {
-        load_fix_RS = true;
-    }
-    if(stall_load_RT == true)
-    {
-        load_fix_RT = true;
-    }
 
 }
 
@@ -1050,15 +1033,14 @@ void Execute_Clock_Cycle()
    }
     else
       {
-        if((!stallPipe_RS) && (!stallPipe_RT) && (!stall_load_RS) && (!stall_load_RT))
+        if((!stallPipe_RS) && (!stallPipe_RT) && (!stall_load) )
         {
             $pc = $pc+1;
         }
 
              stallPipe_RS = false;
              stallPipe_RT = false;
-             stall_load_RS = false;
-             stall_load_RT = false;
+             stall_load = false;
         }
 }
 
