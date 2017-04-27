@@ -4,6 +4,11 @@
 
 int cycle_count=0;
 
+bool stall_load_RS = false;
+bool stall_load_RT = false;
+bool load_fix_RS = false;
+bool load_fix_RT = false;
+
 bool stallPipe_RS = false;
 bool stallPipe_RT = false;
 bool send_RS = false;
@@ -53,7 +58,6 @@ void IF()
     IF_ID_shadow.id_inst.Iform = false;
     IF_ID_shadow.id_inst.Jform = false;
 
-
     IF_ID_shadow.id_pc = $pc;
     IF_ID_shadow.next_pc = $pc+1;
 
@@ -89,6 +93,26 @@ void ID()
         ID_EX_shadow.ex_inst.rt = R[ID_EX_shadow.RegisterRt];
         ID_EX_shadow.ex_inst.rs = R[ID_EX_shadow.RegisterRs];
         ID_EX_shadow.ex_inst.rd = R[ID_EX_shadow.RegisterRd];
+
+        if((ID_EX.memRead == true) && (ID_EX_shadow.RegisterRs == ID_EX.RegisterRt) && (ID_EX.RegisterRt != 0) )
+        {
+            stall_load_RS = true;
+        }
+        if((ID_EX.memRead == true) && (ID_EX_shadow.RegisterRt == ID_EX.RegisterRt) && (ID_EX.RegisterRt != 0) )
+        {
+            stall_load_RT = true;
+        }
+
+        if(load_fix_RS == true)
+        {
+            ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
+            load_fix_RS = false;
+        }
+        if(load_fix_RT == true )
+        {
+            ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
+            load_fix_RT = false;
+        }
 
         break;
 
@@ -149,6 +173,7 @@ void ID()
 
         ID_EX_shadow.RegisterRt = (memory[IF_ID.id_pc] & rt_mask) >> 16;
         ID_EX_shadow.dest_rt = (memory[IF_ID.id_pc] & rt_mask) >> 16;
+
         ID_EX_shadow.RegisterRd = 0;
         ID_EX_shadow.memRead = false;
 
@@ -160,6 +185,16 @@ void ID()
             ID_EX_shadow.memRead = true;
         }
 
+         if((ID_EX.memRead == true) && (ID_EX_shadow.RegisterRs == ID_EX.RegisterRt) && (ID_EX.RegisterRt != 0) )
+        {
+            stall_load_RS = true;
+        }
+
+        if(load_fix_RS == true)
+        {
+            ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
+            load_fix_RS = false;
+        }
 
         break;
 
@@ -167,6 +202,7 @@ void ID()
     case 0x4    :
 
 /// add bltz
+    case 0x1    :
 
 // bgtz I
     case 0x7    :
@@ -193,6 +229,17 @@ void ID()
 
         check_branch = true;
 
+         if((ID_EX.memRead == true) && (ID_EX_shadow.RegisterRs == ID_EX.RegisterRt) && (ID_EX.RegisterRt != 0) )
+        {
+            stall_load_RS = true;
+        }
+
+        if(load_fix_RS == true)
+        {
+            ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
+            load_fix_RS = false;
+        }
+
         break;
 
  /**************************     J-format Instructions ******************************************/
@@ -201,8 +248,10 @@ void ID()
     case 0x2    :
                         ID_EX_shadow.ex_inst.Jform = true;
                         ID_EX_shadow.ex_inst.jImm = ( (memory[IF_ID.id_pc] & imm_mask_j));
-                        $pc = (IF_ID.next_pc & 0xF0000000) | (ID_EX_shadow.ex_inst.jImm );
+                        $pc = (ID_EX_shadow.ex_inst.jImm );
                         jump = true;
+
+
                         break;
 
 // jal  J
@@ -212,8 +261,8 @@ void ID()
         ID_EX_shadow.ex_inst.Jform = true;
         ID_EX_shadow.ex_inst.jImm = ( (memory[IF_ID.id_pc] & imm_mask_j));
         R[31] = (IF_ID.next_pc+1) << 2;
-        $pc = (IF_ID.next_pc & 0xF0000000) | (ID_EX_shadow.ex_inst.jImm);
-        printf("\nJAL   jump address: %d\n",  $pc);
+        $pc =  (ID_EX_shadow.ex_inst.jImm);
+        printf("\nJAL: %d\n",   $pc);
 
         break;
     }
@@ -221,13 +270,17 @@ void ID()
     ID_EX_shadow.ex_pc = IF_ID.id_pc;
     ID_EX_shadow.next_pc = IF_ID.next_pc;
 
-        if(ID_EX_shadow.ex_inst.Rform == true)
+    if(ID_EX_shadow.ex_inst.Rform == true)
     {
         ID_EX_shadow.dest_reg = ID_EX_shadow.RegisterRd;
     }
     if(ID_EX_shadow.ex_inst.Iform == true)
     {
         ID_EX_shadow.dest_reg = ID_EX_shadow.RegisterRt;
+    }
+    if(jump == true)
+    {
+            ID_EX_shadow.dest_reg = 0;
     }
 
 
@@ -376,16 +429,13 @@ check_branch = false;
 
 
 }
-
             // check for jump register
     if((IF_ID.id_inst.opcode == 0) & (ID_EX_shadow.ex_inst.func == 8) )
        {
            jump = true;
-           $pc = (ID_EX_shadow.ex_inst.rs >> 2);
-            printf("JR\n");
+            $pc = (ID_EX_shadow.ex_inst.rs) >> 2;
+            printf("JR: %d \n", $pc);
        }
-
-
 
 }
 
@@ -721,6 +771,7 @@ void MEM()
         return;
 
     // do nothing for R-format instructions (wait for WB() )
+    MEM_WB_shadow.memRead = EX_MEM.memRead;
 
     MEM_WB_shadow.wb_pc = EX_MEM.mem_pc;
     MEM_WB_shadow.next_pc = EX_MEM.next_pc;
@@ -774,6 +825,7 @@ void MEM()
             {
                 EX_MEM.mem_inst.rt = MEM_WB.read_data;
             }
+
             load = false;
             memory[index] = ( EX_MEM.mem_inst.rt & 0x000000FF );
             break;
@@ -816,11 +868,11 @@ void WB()
     if(count_down != 0)
         return;
 
-//    if ( (MEM_WB.dest_reg == 0) && (MEM_WB.wb_alu_result != 0) )
-//        return;
+    if ( (MEM_WB.dest_reg == 0) && (MEM_WB.wb_alu_result != 0) )
+       return;
 
-//    if ( (MEM_WB.dest_reg == 0) && (MEM_WB.read_data != 0) )
-//        return;
+   if ( (MEM_WB.dest_reg == 0) && (MEM_WB.read_data != 0) )
+        return;
 
     switch(MEM_WB.wb_inst.opcode)
     {
@@ -910,6 +962,7 @@ void WB()
         case 0x23:
                   R[ MEM_WB.dest_reg] = MEM_WB.read_data;
                   load = true;
+                  MEM_WB.memRead = false;
                   break;
     }
 
@@ -917,7 +970,7 @@ void WB()
 
 void Move_Shadow_to_Pipeline()
 {
-if ((!stallPipe_RS) && (!stallPipe_RT)) {
+if ((!stallPipe_RS) && (!stallPipe_RT) && (!stall_load_RS) && (!stall_load_RT)) {
 
         IF_ID = IF_ID_shadow;
 
@@ -955,6 +1008,14 @@ else
     {
         send_RT = true;
     }
+    if(stall_load_RS == true)
+    {
+        load_fix_RS = true;
+    }
+    if(stall_load_RT == true)
+    {
+        load_fix_RT = true;
+    }
 
 }
 
@@ -989,15 +1050,16 @@ void Execute_Clock_Cycle()
    }
     else
       {
-        if((!stallPipe_RS) && (!stallPipe_RT))
-        {$pc = $pc+1;
+        if((!stallPipe_RS) && (!stallPipe_RT) && (!stall_load_RS) && (!stall_load_RT))
+        {
+            $pc = $pc+1;
         }
 
              stallPipe_RS = false;
              stallPipe_RT = false;
-
+             stall_load_RS = false;
+             stall_load_RT = false;
         }
-
 }
 
 void clear_pipe()
