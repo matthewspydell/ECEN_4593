@@ -10,29 +10,35 @@
 
 /* instruction-fetch | instruction-decode register */
 struct IFID {
-  uint32_t instructionShadow;
-  uint32_t instruction;
+  int instructionShadow;
+  int instruction;
 } IF_ID;
 // create and initialize IF/ID pipeline register
 
 
 /* instruction-decode | execute register */
 struct IDEX {
-  uint32_t opcodeShadow;
-  uint32_t rsShadow;
-  uint32_t rtShadow;
-  uint32_t rdShadow;
-  uint32_t shamtShadow;
-  uint32_t functShadow;
-  uint32_t immShadow;
+  int opcodeShadow;
+  int rsShadow;
+  int rsValueShadow;
+  int rtShadow;
+  int rtValueShadow;
+  int rdShadow;
+  int rdValueShadow;
+  int shamtShadow;
+  int functShadow;
+  int immShadow;
   bool memReadShadow;
-  uint32_t opcode;
-  uint32_t rs;
-  uint32_t rt;
-  uint32_t rd;
-  uint32_t shamt;
-  uint32_t funct;
-  uint32_t imm;
+  int opcode;
+  int rs;
+  int rsValue;
+  int rt;
+  int rtValue;
+  int rd;
+  int rdValue;
+  int shamt;
+  int funct;
+  int imm;
   bool memRead;
 } ID_EX;
 // create and initialize ID/EX pipeline register
@@ -40,27 +46,33 @@ struct IDEX {
 
 /* execute | memory register */
 struct EXMEM {
-  uint32_t opcodeShadow;
-  uint32_t rdShadow;
-  uint32_t aluOutputShadow;
+  int opcodeShadow;
+  int rdShadow;
+  int rdValueShadow;
+  int aluOutputShadow;
   bool memReadShadow;
-  uint32_t opcode;
-  uint32_t rd;
-  uint32_t aluOutput;
+  int offsetShadow;
+  int opcode;
+  int rd;
+  int rdValue;
+  int aluOutput;
   bool memRead;
+  int offset;
 } EX_MEM;
 // create and initialize EX/MEM pipeline register
 
 
 /* memory | write-back register */
 struct MEMWB {
-  uint32_t opcodeShadow;
-  uint32_t rdShadow;
-  uint32_t aluOutputShadow;
+  int opcodeShadow;
+  int rdShadow;
+  int rdValueShadow;
+  int aluOutputShadow;
   bool memReadShadow;
-  uint32_t opcode;
-  uint32_t rd;
-  uint32_t aluOutput;
+  int opcode;
+  int rd;
+  int rdValue;
+  int aluOutput;
   bool memRead;
 } MEM_WB;
 // create and initialize MEM_WB pipeline register

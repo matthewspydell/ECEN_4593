@@ -10,13 +10,13 @@
 // Register File Mappings
 
 // program counter register setup
-uint32_t $pc;
-uint32_t $sp;
-uint32_t $fp;
+int $pc;
 
 // 32 registers, each 32 bits wide
-uint32_t R[32];
+int R[32];
 
+#define $sp R[29]
+#define $fp R[30]
 
 #endif /* REGISTERFILE_H */
 

@@ -7,7 +7,7 @@
 
 #include "main.h"
 
-void loadMemory(uint32_t* memory, uint32_t* program);
+void loadMemory(int* memory, int* program, size_t programLength);
 
 #endif /* LOADMEMORY_H */
 

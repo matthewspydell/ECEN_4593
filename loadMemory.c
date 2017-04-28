@@ -4,8 +4,8 @@
 
  #include "loadMemory.h"
 
- void loadMemory(uint32_t* memory, uint32_t* program) {
-   for (int i=0; i<sizeof(program); i++) {
+ void loadMemory(int* memory, int* program, size_t programLength) {
+   for (int i=0; i<programLength; i++) {
      memory[i] = program[i]; // copy program into memory
    }
  }

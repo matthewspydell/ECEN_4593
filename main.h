@@ -13,7 +13,7 @@
 #include "pipelineRegisters.h"
 
 // setup memory
-uint32_t mainMemory[1200];  // word aligned memory
+int mainMemory[1200];  // word aligned memory
 
 // setup variables to keep track while program runs
 int clockCycles;
