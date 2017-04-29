@@ -17,31 +17,35 @@
       // load byte (unsigned)
       switch (EX_MEM.offset) {
 	case 0:
-            EX_MEM.rdValue = mainMemory[EX_MEM.aluOutput] & 0xFF000000;
+            EX_MEM.aluOutputShadow = mainMemory[EX_MEM.aluOutput] & 0xFF000000;
             break;
 	case 1:
-            EX_MEM.rdValue = mainMemory[EX_MEM.aluOutput] & 0x00FF0000;
+            EX_MEM.aluOutputShadow = mainMemory[EX_MEM.aluOutput] & 0x00FF0000;
             break;
 	case 2:
-            EX_MEM.rdValue = mainMemory[EX_MEM.aluOutput] & 0x0000FF00;
+            EX_MEM.aluOutputShadow = mainMemory[EX_MEM.aluOutput] & 0x0000FF00;
             break;
 	case 3:
-            EX_MEM.rdValue = mainMemory[EX_MEM.aluOutput] & 0x000000FF;
+            EX_MEM.aluOutputShadow = mainMemory[EX_MEM.aluOutput] & 0x000000FF;
       }
+      MEM_WB.rdShadow = EX_MEM.rd;
+      break;
      case 0x25:  // alu output from previous pipeline holds address location
       // load halfword (unsigned)
       switch (EX_MEM.offset) {
 	case 0:
-            MEM_WB.rdValueShadow = mainMemory[EX_MEM.aluOutput] & 0x0000FFFF;
+            MEM_WB.aluOutputShadow = mainMemory[EX_MEM.aluOutput] & 0x0000FFFF;
             break;
 	case 1:
-            MEM_WB.rdValueShadow = mainMemory[EX_MEM.aluOutput] & 0xFFFF0000;
+            MEM_WB.aluOutputShadow = mainMemory[EX_MEM.aluOutput] & 0xFFFF0000;
       }
+      MEM_WB.rdShadow = EX_MEM.rd;
       break;
      case 0x23:  // alu output from previous pipeline holds address location
       // load word
-      MEM_WB.rdValueShadow = mainMemory[EX_MEM.aluOutput];
-      printf("Loading Word\nmainMemory[%d] = %d\nMEM_WB.rd = %d value = %d\n", EX_MEM.aluOutput, mainMemory[EX_MEM.aluOutput], MEM_WB.rdShadow, MEM_WB.rdValueShadow);
+      MEM_WB.aluOutputShadow = mainMemory[EX_MEM.aluOutput];
+      MEM_WB.rdShadow = EX_MEM.rd;
+      printf("Loading Word\nmainMemory[%d] = %d\nMEM_WB.rd = %d, value = %d\n", EX_MEM.aluOutput, mainMemory[EX_MEM.aluOutput], EX_MEM.rd, MEM_WB.aluOutputShadow);
       break;
      case 0x28:  // store byte, this is the end of this type of instruction
       // store byte from register rd in memory
@@ -78,7 +82,7 @@
      case 0x2B:  // store word, this is the end of this type of instruction
       // store word from register rd in memory
       mainMemory[EX_MEM.aluOutput] = EX_MEM.rdValue;
-      printf("Storing Word\nmainMemory[%d] = %d\nEX_MEM.rd = %d value = %d\n", EX_MEM.aluOutput, mainMemory[EX_MEM.aluOutput], EX_MEM.rd, EX_MEM.rdValue);
+      printf("Storing Word\nmainMemory[%d] = %d\nEX_MEM.rd = %d value = %d\n", EX_MEM.rdValue, mainMemory[EX_MEM.rdValue], EX_MEM.rd, EX_MEM.rdValue);
       break;
      default:
       // if no memory access move rd, aluOutput to next pipeline register

@@ -19,10 +19,7 @@ void instructionExecute() {
     printf("funct = 0x%x\n", ID_EX.funct);
 
     /////////// hazard protection and forwarding ////////////
-    if (EX_MEM.memRead == true && (ID_EX.rs == EX_MEM.rd || ID_EX.rs == MEM_WB.rd || ID_EX.rt == EX_MEM.rd || ID_EX.rt == MEM_WB.rd)) {
-        stallPipe = true;
-        printf("Stalling");
-    } else if (ID_EX.rs == EX_MEM.rd || ID_EX.rs == MEM_WB.rd || ID_EX.rt == EX_MEM.rd || ID_EX.rt == MEM_WB.rd) {
+    if (ID_EX.rs == EX_MEM.rd || ID_EX.rs == MEM_WB.rd || ID_EX.rt == EX_MEM.rd || ID_EX.rt == MEM_WB.rd) {
         if (ID_EX.rs == EX_MEM.rd) {
           ID_EX.rsValue = EX_MEM.aluOutput;
         } 
@@ -166,17 +163,17 @@ void instructionExecute() {
       printf("Set Less Than Unsigned Instruction\n");
       break;
     case 0x28:  // store byte, MEM8(R[rs] + imm) = R[rt]
-      EX_MEM.aluOutputShadow = (ID_EX.rsValue + ID_EX.imm)>>2;
+      EX_MEM.rdValueShadow = (ID_EX.rsValue + ID_EX.imm)>>2;
       EX_MEM.offsetShadow = EX_MEM.aluOutputShadow%4;
       printf("Store Byte Instruction\n");
       break;
     case 0x29:  // store halfword, MEM16(R[rs] + imm) = R[rt]
-      EX_MEM.aluOutputShadow = (ID_EX.rsValue + ID_EX.imm)>>2;
+      EX_MEM.rdValueShadow = (ID_EX.rsValue + ID_EX.imm)>>2;
       EX_MEM.offsetShadow = EX_MEM.aluOutputShadow%2;
       printf("Store Halfword Instruction\n");
       break;
     case 0x2B:  // store word, MEM32(R[rs] + imm) = R[rt]
-      EX_MEM.aluOutputShadow = (ID_EX.rsValue + ID_EX.imm)>>2;
+      EX_MEM.rdValueShadow = (ID_EX.rsValue + ID_EX.imm)>>2;
       printf("Store Word Instruction\n");
       break;
     }

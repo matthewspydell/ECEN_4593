@@ -43,6 +43,12 @@ void instructionDecode() {
     ID_EX.functShadow = (IF_ID.instruction & functMask);
     ID_EX.memReadShadow = false;
     
+    /////////// hazard protection ////////////
+    if (EX_MEM.memRead == true && (ID_EX.rsShadow == ID_EX.rd || ID_EX.rtShadow == ID_EX.rd)) {
+        stallPipe = true;
+        printf("Stalling\n");
+    }
+    
     if (ID_EX.functShadow == 0x08) {    // jump register
         printf("Jump Register Instruction\n");
         $pc = R[ID_EX.rsShadow] >> 2; // change from byte aligned to word aligned
@@ -64,6 +70,9 @@ void instructionDecode() {
         printf("mainMemory[8] = %d\n", mainMemory[8]);
         printf("mainMemory[9] = %d\n", mainMemory[9]);
         printf("Clock Cycles = %d\n\n", clockCycles);
+        for(int i=0; i<1200; i++) {
+            printf("mainMemory[%d] = 0x%x = %u\n", i, mainMemory[i], mainMemory[i]);
+        }
     }
     
   } else if (ID_EX.opcodeShadow == 0x2 || ID_EX.opcodeShadow == 0x3) { // J-format instruction
