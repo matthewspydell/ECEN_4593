@@ -534,8 +534,11 @@ int main()
     ID_EX.memReadShadow = false;
     ID_EX.opcode = 0;
     ID_EX.rs = 0;
+    ID_EX.rsValue = 0;
     ID_EX.rt = 0;
+    ID_EX.rtValue = 0;
     ID_EX.rd = 0;
+    ID_EX.rdValue = 0;
     ID_EX.shamt = 0;
     ID_EX.funct = 0;
     ID_EX.imm = 0;
@@ -545,19 +548,25 @@ int main()
     EX_MEM.rdShadow = 0;
     EX_MEM.aluOutputShadow = 0;
     EX_MEM.memReadShadow = false;
+    EX_MEM.offsetShadow = 0;
+    EX_MEM.moveControlShadow = 0;
     EX_MEM.opcode = 0;
     EX_MEM.rd = 0;
     EX_MEM.aluOutput = 0;
     EX_MEM.memRead = false;
+    EX_MEM.offset = 0;
+    EX_MEM.moveControl = 0;
     
     MEM_WB.opcodeShadow = 0;
     MEM_WB.rdShadow = 0;
     MEM_WB.aluOutputShadow = 0;
     MEM_WB.memReadShadow = false;
+    MEM_WB.moveControlShadow = 0;
     MEM_WB.opcode = 0;
     MEM_WB.rd = 0;
     MEM_WB.aluOutput = 0;
     MEM_WB.memRead = false;
+    MEM_WB.moveControl = 0;
     /*
     for(int i=0; i<1200; i++) {
         printf("mainMemory[%d] = 0x%x\n", i, mainMemory[i]);
@@ -566,7 +575,19 @@ int main()
     
     // program stops when $pc reaches address zero
     while ($pc != 0) {
-        printf("\n------------------------------\n$pc: %u\n", $pc);
+        //printf("\n------------------------------\n$pc: %u\n", $pc);
+        //printf("clock cycles = %d\n", clockCycles);
+        //printf("$t1 = %d\n", R[9]);
+        if (clockCycles % 10000 == 0){
+            printf("\n------------------------------\n$pc: %u\n", $pc);
+            printf("clock cycles = %d\n", clockCycles);
+            for (int i=0; i<1200; i++) {
+                printf("mainMemory[%d] = 0x%x = %u\n", i, mainMemory[i], mainMemory[i]);
+            }
+            if (clockCycles == 600000) {
+                
+            };
+        }
         executeClock();
         clockCycles++;
     }

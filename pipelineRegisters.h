@@ -52,12 +52,14 @@ struct EXMEM {
   int aluOutputShadow;
   bool memReadShadow;
   int offsetShadow;
+  int moveControlShadow;
   int opcode;
   int rd;
   int rdValue;
   int aluOutput;
   bool memRead;
   int offset;
+  int moveControl;
 } EX_MEM;
 // create and initialize EX/MEM pipeline register
 
@@ -69,11 +71,13 @@ struct MEMWB {
   int rdValueShadow;
   int aluOutputShadow;
   bool memReadShadow;
+  int moveControlShadow;
   int opcode;
   int rd;
   int rdValue;
   int aluOutput;
   bool memRead;
+  int moveControl;
 } MEM_WB;
 // create and initialize MEM_WB pipeline register
 

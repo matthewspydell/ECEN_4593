@@ -14,11 +14,8 @@ void flipShadow() {
   if (!stallPipe) {
     ID_EX.opcode = ID_EX.opcodeShadow;
     ID_EX.rs = ID_EX.rsShadow;
-    ID_EX.rsValue = ID_EX.rsValueShadow;
     ID_EX.rt = ID_EX.rtShadow;
-    ID_EX.rtValue = ID_EX.rtValueShadow;
     ID_EX.rd = ID_EX.rdShadow;
-    ID_EX.rdValue = ID_EX.rdValueShadow;
     ID_EX.shamt = ID_EX.shamtShadow;
     ID_EX.funct = ID_EX.functShadow;
     ID_EX.imm = ID_EX.immShadow;
@@ -43,6 +40,8 @@ void flipShadow() {
   EX_MEM.aluOutput = EX_MEM.aluOutputShadow;
   EX_MEM.opcode = EX_MEM.opcodeShadow;
   EX_MEM.memRead = EX_MEM.memReadShadow;
+  EX_MEM.offset = EX_MEM.offsetShadow;
+  EX_MEM.moveControl = EX_MEM.moveControlShadow;
 
   // flip MEM/WB pipeline register
   MEM_WB.rd = MEM_WB.rdShadow;
@@ -50,6 +49,7 @@ void flipShadow() {
   MEM_WB.aluOutput = MEM_WB.aluOutputShadow;
   MEM_WB.opcode = MEM_WB.opcodeShadow;
   MEM_WB.memRead = MEM_WB.memReadShadow;
+  MEM_WB.moveControl = MEM_WB.moveControlShadow;
 
   if (!pcBranch && !stallPipe) $pc++;
   pcBranch = false;
