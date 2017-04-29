@@ -5,6 +5,7 @@
 int cycle_count=0;
 
 bool stall_load = false;
+bool fix_load = false;
 bool branch_extra = false;
 
 bool stallPipe_RS = false;
@@ -389,14 +390,14 @@ check_branch = false;
 
 }
 
-        if((EX_MEM.memRead == true) && (check_load_hazard==true) && (EX_MEM.dest_reg != 0) )
+        if((EX_MEM.memRead == true) && (check_load_hazard==true) && (EX_MEM.dest_reg != 0) && (!fix_load) )
         {
             if( (ID_EX_shadow.RegisterRs == EX_MEM.dest_reg) || (ID_EX_shadow.RegisterRt == EX_MEM.dest_reg) )
             {
                 stall_load = true;
             }
         }
-        if((ID_EX.memRead == true) && (check_load_hazard == true) && (ID_EX.dest_reg != 0) )
+        if((ID_EX.memRead == true) && (check_load_hazard == true) && (ID_EX.dest_reg != 0) && (!fix_load) )
         {
             if( (ID_EX_shadow.RegisterRs == ID_EX.dest_reg) || (ID_EX_shadow.RegisterRt == ID_EX.dest_reg) )
             {
@@ -466,15 +467,34 @@ forward_Rt_mem = false;
     }
     if((MEM_WB.RegWrite == true) && (MEM_WB.dest_reg !=0) && (MEM_WB.dest_reg == ID_EX.RegisterRs))
     {
-        forward_Rs_mem = true;
-        mem_rd_rs = MEM_WB.wb_alu_result;
-        MEM_WB.RegWrite = false;
+        if(MEM_WB.wb_inst.opcode == 35)
+        {
+            forward_Rs_mem = true;
+            mem_rd_rs = MEM_WB.read_data;
+            MEM_WB.RegWrite = false;
+
+        }
+        else {
+            forward_Rs_mem = true;
+            mem_rd_rs = MEM_WB.wb_alu_result;
+            MEM_WB.RegWrite = false;
+        }
     }
      if((MEM_WB.RegWrite == true) && (MEM_WB.dest_reg !=0) && (MEM_WB.dest_reg == ID_EX.RegisterRt))
     {
-        forward_Rt_mem = true;
-        mem_rd_rt = MEM_WB.wb_alu_result;
-        MEM_WB.RegWrite = false;
+
+         if(MEM_WB.wb_inst.opcode == 35)
+        {
+            forward_Rt_mem = true;
+            mem_rd_rt = MEM_WB.read_data;
+            MEM_WB.RegWrite = false;
+
+        }
+        else {
+            forward_Rt_mem = true;
+            mem_rd_rt = MEM_WB.wb_alu_result;
+            MEM_WB.RegWrite = false;
+        }
     }
 
 
@@ -816,9 +836,29 @@ void MEM()
             {
                 EX_MEM.mem_inst.rt = MEM_WB.read_data;
             }
+            int byteOffset = ((EX_MEM.alu_result))%4;
+            int temp = 0;
+
+            switch (byteOffset) {
+                case 0:
+                    temp = memory[index] & 0x00FFFFFF;
+                    memory[index] = temp | (EX_MEM.mem_inst.rt << 24);
+                    break;
+                case 1:
+                    temp = memory[index] & 0xFF00FFFF;
+                    memory[index] = temp | (EX_MEM.mem_inst.rt << 16);
+                    break;
+                case 2:
+                    temp = memory[index] & 0xFFFF00FF;
+                    memory[index] = temp | (EX_MEM.mem_inst.rt << 8);
+                    break;
+                case 3:
+                    temp = memory[index] & 0xFFFFFF00;
+                    memory[index] = temp | EX_MEM.mem_inst.rt;
+                    break;
+            }
 
             load = false;
-            memory[index] = ( EX_MEM.mem_inst.rt & 0x000000FF );
             break;
 
         // sh
@@ -829,6 +869,21 @@ void MEM()
             {
                 EX_MEM.mem_inst.rt = MEM_WB.read_data;
             }
+
+//            int byteOffset = (EX_MEM.alu_result)%2;
+//            int temp = 0;
+
+//            switch (byteOffset) {
+//
+//                case 0:
+//                    temp = mainMemory[baseAddress] & 0x0000FFFF;
+//                    mainMemory[baseAddress] = temp | (rt << 16);
+//                    break;
+//                case 1:
+//                    temp = mainMemory[baseAddress] & 0xFFFF0000;
+//                    mainMemory[baseAddress] = temp | rt;
+//            }
+
             load = false;
             memory[index] = ( EX_MEM.mem_inst.rt & 0x0000FFFF );
             break;
@@ -837,9 +892,10 @@ void MEM()
         case 0x2b:
 
              // load store hazard
-            if ( (MEM_WB_shadow.dest_reg == MEM_WB.dest_reg) && (load == true ) )
+            if ( fix_load == true )
             {
                 EX_MEM.mem_inst.rt = MEM_WB.read_data;
+                fix_load = false;
             }
             load = false;
             memory[index] = EX_MEM.mem_inst.rt;
@@ -999,6 +1055,8 @@ else
     {
         send_RT = true;
     }
+    else
+        fix_load = true;
 
 }
 
