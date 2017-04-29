@@ -39,8 +39,8 @@
       printf("R[%d] = %d\n", MEM_WB.rd, R[MEM_WB.rd]);
       break;
     case 0x23:  // load word, R[rt] = MEM16(R[rs] + imm)
-      printf("ALU Output = %d\n", MEM_WB.aluOutput);
       R[MEM_WB.rd] = MEM_WB.aluOutput;
+      printf("ALU Output = %d\n", MEM_WB.aluOutput);
       printf("R[%d] = %d\n", MEM_WB.rd, R[MEM_WB.rd]);
       break;
     case 0x0D:  // or immediate, R[rt] = R[rs] | imm (zero extended)

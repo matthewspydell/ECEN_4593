@@ -143,11 +143,9 @@ void instructionDecode() {
       if (((ID_EX.rd == ID_EX.rsShadow) && (ID_EX.rsShadow != 0)) || ((ID_EX.rd == ID_EX.rdShadow) && (ID_EX.rdShadow != 0))) {
         stallPipe = true;
         printf("Stalling\n");
-        //$pc --; // load in previous instruction again
       } else if ((((ID_EX.rd == ID_EX.rsShadow) && (ID_EX.rsShadow != 0)) || ((ID_EX.rd == ID_EX.rdShadow) && (ID_EX.rdShadow != 0))) && EX_MEM.memRead) {
         stallPipe = true;
         printf("Stalling\n");
-        //$pc --; // load in previous instruction again
       } else if ((EX_MEM.rd == ID_EX.rsShadow) && (ID_EX.rsShadow != 0)) {
         ID_EX.rsValueShadow = EX_MEM.aluOutput;
       } else if ((MEM_WB.rd == ID_EX.rsShadow) && (ID_EX.rsShadow != 0)) {

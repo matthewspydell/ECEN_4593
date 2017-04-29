@@ -22,15 +22,19 @@ void instructionExecute() {
     if (ID_EX.rs == EX_MEM.rd || ID_EX.rs == MEM_WB.rd || ID_EX.rt == EX_MEM.rd || ID_EX.rt == MEM_WB.rd) {
         if (ID_EX.rs == EX_MEM.rd) {
           ID_EX.rsValue = EX_MEM.aluOutput;
+          printf("Forwarded EX_MEM.aluOutput = %d to ID_EX.rs\n", EX_MEM.aluOutput);
         } 
         if (ID_EX.rs == MEM_WB.rd) {
           ID_EX.rsValue = MEM_WB.aluOutput;
+          printf("Forwarded MEM_WB.aluOutput = %d to ID_EX.rs\n", MEM_WB.aluOutput);
         } 
         if (ID_EX.rt == EX_MEM.rd) {
           ID_EX.rtValue = EX_MEM.aluOutput;
+          printf("Forwarded EX_MEM.aluOutput = %d to ID_EX.rt\n", EX_MEM.aluOutput);
         } 
         if (ID_EX.rt == MEM_WB.rd) {
           ID_EX.rtValue = MEM_WB.aluOutput;
+          printf("Forwarded EX_MEM.aluOutput = %d to ID_EX.rt\n", MEM_WB.aluOutput);
         }
     }
 
@@ -46,7 +50,7 @@ void instructionExecute() {
         break;
       case 0x24:  // and, R[rd] = R[rs] & R[rt]
         EX_MEM.aluOutputShadow = ID_EX.rsValue & ID_EX.rtValue;
-        printf("And Instruction\n");
+        //printf("And Instruction\n");
         break;
       /* Jump register is performed in the decode stage
       case 0x08:  // jump reg, $pc = R[rs]
