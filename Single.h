@@ -17,6 +17,8 @@ bool load = false;
 bool check_load_hazard = false;
 
 
+
+
 bool jump = false;
 bool branch = false;
 bool check_branch = false;
@@ -56,6 +58,7 @@ void IF()
     IF_ID_shadow.id_inst.Rform = false;
     IF_ID_shadow.id_inst.Iform = false;
     IF_ID_shadow.id_inst.Jform = false;
+    IF_ID_shadow.id_inst.movz = false;
 
     IF_ID_shadow.id_pc = $pc;
     IF_ID_shadow.next_pc = $pc+1;
@@ -268,13 +271,25 @@ check_branch = false;
 
             if(send_RS == true)
                 {
-                    ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
-                    send_RS = false;
+                    if((EX_MEM.mem_inst.func == 0xa) && (EX_MEM.mem_inst.movz == false))
+                    {
+                        send_RS = false;
+                    }
+                    else
+                    {ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
+                    send_RS = false;}
                 }
             if (send_RT == true)
             {
-                ID_EX_shadow.ex_inst.rt = EX_MEM.alu_result;
-                send_RT = false;
+                if((EX_MEM.mem_inst.func == 0xa) && (EX_MEM.mem_inst.movz == false))
+                    {
+                        send_RT = false;
+                }
+                else
+                {
+                    ID_EX_shadow.ex_inst.rt = EX_MEM.alu_result;
+                    send_RT = false;
+                }
             }
 
             if( (ID_EX_shadow.ex_inst.rs == ID_EX_shadow.ex_inst.rt) && (!stallPipe_RS ) && (!stallPipe_RT) ) {
@@ -297,8 +312,14 @@ check_branch = false;
 
                 if(send_RS == true)
                 {
-                    ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
-                    send_RS = false;
+                    if((EX_MEM.mem_inst.func == 0xa) && (EX_MEM.mem_inst.movz == false))
+                    {
+                        send_RS = false;
+                        }
+                    else{
+                            ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
+                            send_RS = false;
+                    }
                 }
 
                  if( (ID_EX_shadow.ex_inst.rs < 0) && (!stallPipe_RS )  ) {
@@ -322,8 +343,15 @@ check_branch = false;
 
                 if(send_RS == true)
                 {
-                    ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
-                    send_RS = false;
+
+                    if((EX_MEM.mem_inst.func == 0xa) && (EX_MEM.mem_inst.movz == false))
+                    {
+                        send_RS = false;
+                        }
+                    else{
+                            ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
+                            send_RS = false;
+                    }
                 }
 
                if( (ID_EX_shadow.ex_inst.rs > 0) && (!stallPipe_RS ) ) {
@@ -342,8 +370,14 @@ check_branch = false;
 
             if(send_RS == true)
                 {
-                    ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
-                    send_RS = false;
+                    if((EX_MEM.mem_inst.func == 0xa) && (EX_MEM.mem_inst.movz == false))
+                    {
+                        send_RS = false;
+                    }
+                    else{
+                            ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
+                            send_RS = false;
+                    }
                 }
 
                 if( (ID_EX_shadow.ex_inst.rs <= 0) && (!stallPipe_RS ))
@@ -364,13 +398,25 @@ check_branch = false;
 
             if(send_RS == true)
                 {
-                    ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
-                    send_RS = false;
+                    if((EX_MEM.mem_inst.func == 0xa) && (EX_MEM.mem_inst.movz == false))
+                    {
+                        send_RS = false;
+                    }
+                    else{
+                            ID_EX_shadow.ex_inst.rs = EX_MEM.alu_result;
+                            send_RS = false;
+                    }
                 }
             if (send_RT == true)
             {
-                ID_EX_shadow.ex_inst.rt = EX_MEM.alu_result;
-                send_RT = false;
+                if((EX_MEM.mem_inst.func == 0xa) && (EX_MEM.mem_inst.movz == false))
+                    {
+                        send_RT = false;
+                    }
+                else{
+                        ID_EX_shadow.ex_inst.rt = EX_MEM.alu_result;
+                        send_RT = false;
+                }
             }
 
             if( (ID_EX_shadow.ex_inst.rs != ID_EX_shadow.ex_inst.rt ) && (!stallPipe_RS) && (!stallPipe_RT) )
@@ -454,20 +500,36 @@ forward_Rt_mem = false;
         // Check if data forwarding is needed
     if( (EX_MEM.RegWrite == true ) && (EX_MEM.dest_reg !=0) && (EX_MEM.dest_reg == ID_EX.RegisterRs) )
     {
-        forward_Rs_ex = true;
-        rd_to_rs = EX_MEM.alu_result;
-        EX_MEM_shadow.RegWrite = false;
+        if(EX_MEM.mem_inst.func == 0xa && EX_MEM.mem_inst.movz == false)
+        {
+            ;
+        }
+        else {
+                forward_Rs_ex = true;
+                rd_to_rs = EX_MEM.alu_result;
+                EX_MEM_shadow.RegWrite = false;
+        }
     }
 
     if( (EX_MEM.RegWrite == true) && (EX_MEM.dest_reg  != 0) && (EX_MEM.dest_reg == ID_EX.RegisterRt))
     {
-        forward_Rt_ex = true;
-        rd_to_rt = EX_MEM.alu_result;
-        EX_MEM.RegWrite = false;
+        if(EX_MEM.mem_inst.func == 0xa && EX_MEM.mem_inst.movz == false)
+        {
+            ;
+        }
+        else {
+                forward_Rt_ex = true;
+                rd_to_rt = EX_MEM.alu_result;
+                EX_MEM.RegWrite = false;
+        }
     }
     if((MEM_WB.RegWrite == true) && (MEM_WB.dest_reg !=0) && (MEM_WB.dest_reg == ID_EX.RegisterRs))
     {
-        if(MEM_WB.wb_inst.opcode == 35)
+        if(MEM_WB.wb_inst.func == 0xa && MEM_WB.wb_inst.movz == false)
+        {
+            ;
+        }
+        else if(MEM_WB.wb_inst.opcode == 35)
         {
             forward_Rs_mem = true;
             mem_rd_rs = MEM_WB.read_data;
@@ -588,6 +650,17 @@ forward_Rt_mem = false;
                     case 0x2b:
                         EX_MEM_shadow.alu_result = (EX_MEM_shadow.mem_inst.rs < EX_MEM_shadow.mem_inst.rt) ? 1 : 0 ;
                         break;
+
+                    case 0xa:
+                        if (ID_EX.ex_inst.rt == 0)
+                        {
+                            EX_MEM_shadow.mem_inst.rd = ID_EX.ex_inst.rs;
+                            EX_MEM_shadow.mem_inst.movz = true;
+                        }
+                        else
+                        {
+                            EX_MEM_shadow.mem_inst.movz = false;
+                        }
 
                 // end switch
                 }break;
@@ -965,6 +1038,16 @@ void WB()
                     case 0x2b:
 
                                 R[ MEM_WB.dest_reg] = MEM_WB.wb_alu_result;
+                                break;
+
+                    case 0xa:
+                                if(MEM_WB.wb_inst.movz == false)
+                                {
+                                    return;
+                                }
+                                else
+                                    {R[MEM_WB.dest_reg] = MEM_WB.wb_inst.rd;
+                                    MEM_WB.wb_inst.movz = false; }
                                 break;
 
                 // end switch
