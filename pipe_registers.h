@@ -11,6 +11,7 @@
    bool Rform;
    bool Iform;
    bool Jform;
+   bool movz;
 
 } instruction ;
 
@@ -31,6 +32,7 @@ struct id_ex
     unsigned int dest_rd, dest_rt, dest_reg;
     unsigned int RegisterRs,RegisterRd,RegisterRt;
     bool memRead;
+
 
 }ID_EX_shadow,ID_EX;
 
