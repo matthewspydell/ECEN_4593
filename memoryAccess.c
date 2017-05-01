@@ -5,7 +5,7 @@
 #include "memoryAccess.h"
 
  void memoryAccess() {
-   //printf("\nMemory Access Stage\n");
+   printf("\nMemory Access Stage\n");
    
    int temp;
    
@@ -46,7 +46,7 @@
       // load word
       MEM_WB.aluOutputShadow = mainMemory[EX_MEM.aluOutput];
       MEM_WB.rdShadow = EX_MEM.rd;
-      //printf("Loading Word\nmainMemory[%d] = %d\nMEM_WB.rd = %d, value = %d\n", EX_MEM.aluOutput, mainMemory[EX_MEM.aluOutput], EX_MEM.rd, MEM_WB.aluOutputShadow);
+      printf("Loading Word\nmainMemory[%d] = %d\nMEM_WB.rd = %d, value = %d\n", EX_MEM.aluOutput, mainMemory[EX_MEM.aluOutput], EX_MEM.rd, MEM_WB.aluOutputShadow);
       break;
      case 0x28:  // store byte, this is the end of this type of instruction
       // store byte from register rd in memory
@@ -83,7 +83,7 @@
      case 0x2B:  // store word, this is the end of this type of instruction
       // store word from register rd in memory
       mainMemory[EX_MEM.aluOutput] = EX_MEM.rdValue;
-      //printf("Storing Word\nmainMemory[%d] = %d\nEX_MEM.rd = %d value = %d\n", EX_MEM.aluOutput, mainMemory[EX_MEM.aluOutput], EX_MEM.rd, EX_MEM.rdValue);
+      printf("Storing Word\nmainMemory[%d] = %d\nEX_MEM.rd = %d value = %d\n", EX_MEM.aluOutput, mainMemory[EX_MEM.aluOutput], EX_MEM.rd, EX_MEM.rdValue);
       break;
      default:
       // if no memory access move rd, aluOutput to next pipeline register

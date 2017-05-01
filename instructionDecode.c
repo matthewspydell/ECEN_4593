@@ -24,14 +24,14 @@ uint32_t addMask = 0x03FFFFFF;
 
 void instructionDecode() {
 
-  //printf("\nDecode Stage\n");
+  printf("\nDecode Stage\n");
     
   ID_EX.opcodeShadow = (IF_ID.instruction & opcodeMask)>>26;
-  //printf("opcodeShadow = %d\n", ID_EX.opcodeShadow);
+  printf("opcodeShadow = %d\n", ID_EX.opcodeShadow);
 
   // instruction format is determined by opcode
   if (ID_EX.opcodeShadow == 0) { // R-format instruction
-    //printf("R-Format Instruction\n");  
+    printf("R-Format Instruction\n");  
       
     ID_EX.rsShadow = (IF_ID.instruction & rsMask)>>21;
     ID_EX.rtShadow = (IF_ID.instruction & rtMask)>>16;
@@ -43,7 +43,7 @@ void instructionDecode() {
     /////////// hazard protection ////////////
     if (EX_MEM.memRead == true && (ID_EX.rsShadow == ID_EX.rd || ID_EX.rtShadow == ID_EX.rd)) {
         stallPipe = true;
-        //printf("Stalling\n");
+        printf("Stalling\n");
     }
     
     if (ID_EX.functShadow == 0x08) {    // jump register
@@ -106,7 +106,7 @@ void instructionDecode() {
     printf("Clock Cycles = %d\n\n", clockCycles);
     
   } else { // I-format instruction
-    //printf("I-Format Instruction\n");
+    printf("I-Format Instruction\n");
       
     ID_EX.rsShadow = (IF_ID.instruction & rsMask)>>21;
     ID_EX.rsValueShadow = R[ID_EX.rsShadow];
@@ -126,7 +126,7 @@ void instructionDecode() {
     if (ID_EX.opcodeShadow == 0x28 || ID_EX.opcodeShadow == 0x29 || ID_EX.opcodeShadow == 0x2B) {
         if (ID_EX.memRead == true && ID_EX.rdShadow == ID_EX.rd) {  // if value being loaded ahead is what the next instruction is storing, stall
             stallPipe = true;
-            //printf("Stalling\n");
+            printf("Stalling\n");
         }
     }
 
@@ -135,10 +135,10 @@ void instructionDecode() {
       // hazard protection and forwarding for branch
       if (((ID_EX.rd == ID_EX.rsShadow) && (ID_EX.rsShadow != 0)) || ((ID_EX.rd == ID_EX.rdShadow) && (ID_EX.rdShadow != 0))) {
         stallPipe = true;
-        //printf("Stalling\n");
+        printf("Stalling\n");
       } else if ((((ID_EX.rd == ID_EX.rsShadow) && (ID_EX.rsShadow != 0)) || ((ID_EX.rd == ID_EX.rdShadow) && (ID_EX.rdShadow != 0))) && EX_MEM.memRead) {
         stallPipe = true;
-        //printf("Stalling\n");
+        printf("Stalling\n");
       } else if ((EX_MEM.rd == ID_EX.rsShadow) && (ID_EX.rsShadow != 0)) {
         ID_EX.rsValueShadow = EX_MEM.aluOutput;
       } else if ((MEM_WB.rd == ID_EX.rsShadow) && (ID_EX.rsShadow != 0)) {
@@ -154,27 +154,27 @@ void instructionDecode() {
             if ((ID_EX.rsValueShadow == ID_EX.rdValueShadow) && !stallPipe) {
                 $pc = $pc + ID_EX.immShadow;
                 pcBranch = true;  // don't increment $pc after the jump
-                //printf("Branching\n");
+                printf("Branching\n");
             }
             break;
           case 0x05:    // branch on not equal, if (R[rs] != R[rt]) $pc = $pc + 4 + branchAddress
             if ((ID_EX.rsValueShadow != ID_EX.rdValueShadow) && !stallPipe) {
                 $pc = $pc + ID_EX.immShadow;
                 pcBranch = true;  // don't increment $pc after the jump
-                //printf("Branching\n");
+                printf("Branching\n");
             }
           case 0x06:    // branch on less than or equal to zero (R[rs] <= 0) $pc = $pc + 4 + branchAddress
             if ((ID_EX.rsValueShadow <= 0) && !stallPipe) {
                 $pc = $pc + ID_EX.immShadow;
                 pcBranch = true;  // don't increment $pc after the jump
-                //printf("Branching\n");
+                printf("Branching\n");
             }
             break;
           case 0x07:    // branch on greater than zero (R[rs] > 0) $pc = $pc + 4 + branchAddress
             if ((ID_EX.rsValueShadow > 0) && !stallPipe) {
                 $pc = $pc + ID_EX.immShadow;
                 pcBranch = true;  // don't increment $pc after the jump
-                //printf("Branching\n");
+                printf("Branching\n");
             }
         }
         // once branch is determined a noop should be inserted in its place to make sure nothing executes

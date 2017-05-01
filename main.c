@@ -575,9 +575,9 @@ int main()
     
     // program stops when $pc reaches address zero
     while ($pc != 0) {
-        //printf("\n------------------------------\n$pc: %u\n", $pc);
-        //printf("clock cycles = %d\n", clockCycles);
-        //printf("$t1 = %d\n", R[9]);
+        printf("\n------------------------------\n$pc: %u\n", $pc);
+        printf("clock cycles = %d\n", clockCycles);
+        printf("$t1 = %d\n", R[9]);
         if (clockCycles % 10000 == 0){
             printf("\n------------------------------\n$pc: %u\n", $pc);
             printf("clock cycles = %d\n", clockCycles);
@@ -587,6 +587,9 @@ int main()
             if (clockCycles == 600000) {
                 
             };
+        }
+        if ($pc == 45) {
+            
         }
         executeClock();
         clockCycles++;
