@@ -19,6 +19,7 @@ int mainMemory[1200];  // word aligned memory
 int clockCycles;
 bool stallPipe;
 bool pcBranch;
+bool printing;
 
 #endif /* MAIN_H */
 

@@ -5,9 +5,10 @@
 #include "instructionFetch.h"
 
 void instructionFetch(uint32_t $pc) {
-  IF_ID.instructionShadow = mainMemory[$pc];
-  
-  printf("\nInstruction Fetch Stage\nInstruction = 0x%x\n", mainMemory[$pc]);
+    IF_ID.instructionShadow = mainMemory[$pc];
+    if (printing) {
+        printf("\nInstruction Fetch Stage\nInstruction = 0x%x\n", mainMemory[$pc]);
+    }
 }
 
 
