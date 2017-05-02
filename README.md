@@ -1,5 +1,6 @@
 # ECEN_4593
 Computer Organization Class Project - MIPS emulator using C
+
 University of Colorado – Boulder | Spring 2017
 
 @authors Matthew Spydell and Marisa Edwinson
