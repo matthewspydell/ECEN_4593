@@ -30,6 +30,7 @@
       <itemPath>instructionFetch.c</itemPath>
       <itemPath>loadMemory.c</itemPath>
       <itemPath>main.c</itemPath>
+      <itemPath>memAccess.c</itemPath>
       <itemPath>memoryAccess.c</itemPath>
       <itemPath>writeBack.c</itemPath>
     </logicalFolder>
@@ -85,6 +86,8 @@
       <item path="main.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="main.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="memAccess.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="memoryAccess.c" ex="false" tool="0" flavor2="0">
       </item>
@@ -147,6 +150,8 @@
       <item path="main.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="main.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="memAccess.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="memoryAccess.c" ex="false" tool="0" flavor2="0">
       </item>

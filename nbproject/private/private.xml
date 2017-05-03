@@ -8,6 +8,7 @@
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
             <file>file:/Users/matthewspydell/NetBeansProjects/MIPS_Simulator/instructionFetch.c</file>
+            <file>file:/Users/matthewspydell/NetBeansProjects/MIPS_Simulator/executeClock.c</file>
             <file>file:/Users/matthewspydell/NetBeansProjects/MIPS_Simulator/instructionDecode.c</file>
             <file>file:/Users/matthewspydell/NetBeansProjects/MIPS_Simulator/memoryAccess.c</file>
             <file>file:/Users/matthewspydell/NetBeansProjects/MIPS_Simulator/writeBack.c</file>

@@ -42,6 +42,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/instructionFetch.o \
 	${OBJECTDIR}/loadMemory.o \
 	${OBJECTDIR}/main.o \
+	${OBJECTDIR}/memAccess.o \
 	${OBJECTDIR}/memoryAccess.o \
 	${OBJECTDIR}/writeBack.o
 
@@ -104,6 +105,11 @@ ${OBJECTDIR}/main.o: main.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.c) -g -std=c11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.c
+
+${OBJECTDIR}/memAccess.o: memAccess.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.c) -g -std=c11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/memAccess.o memAccess.c
 
 ${OBJECTDIR}/memoryAccess.o: memoryAccess.c 
 	${MKDIR} -p ${OBJECTDIR}

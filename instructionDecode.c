@@ -34,7 +34,7 @@ void instructionDecode() {
     }
 
     // instruction format is determined by opcode
-    if (ID_EX.opcodeShadow == 0) { // R-format instruction
+    if ((ID_EX.opcodeShadow == 0) || (ID_EX.opcodeShadow == 0x1F)) { // R-format instruction or special instruction
         if (printing) {
             printf("R-Format Instruction\n");
         }
