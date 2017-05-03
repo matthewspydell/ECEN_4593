@@ -30,7 +30,7 @@ void instructionDecode() {
 
     ID_EX.opcodeShadow = (IF_ID.instruction & opcodeMask) >> 26;
     if (printing) {
-        printf("opcodeShadow = %d\n", ID_EX.opcodeShadow);
+        printf("opcodeShadow = 0x%x\n", ID_EX.opcodeShadow);
     }
 
     // instruction format is determined by opcode
@@ -115,13 +115,13 @@ void instructionDecode() {
         ID_EX.rdShadow = (IF_ID.instruction & rtMask) >> 16; // rd == rt for I-format instructions
         ID_EX.rdValueShadow = R[ID_EX.rdShadow];
         ID_EX.immShadow = (IF_ID.instruction & immMask);
-        
+
         if ((ID_EX.immShadow & 0x00008000) > 1) {
             ID_EX.immShadow = ID_EX.immShadow | 0xFFFF0000; // sign extend if negative
         }
 
         // determine if instruction is a memory load
-        if ((ID_EX.opcodeShadow == 0x24) || (ID_EX.opcodeShadow == 0x25) || (ID_EX.opcodeShadow == 0x23)) {
+        if ((ID_EX.opcodeShadow == 0x20) || (ID_EX.opcodeShadow == 0x21) || (ID_EX.opcodeShadow == 0x23)) {
             ID_EX.memReadShadow = true;
         } else ID_EX.memReadShadow = false;
         /*
@@ -134,15 +134,15 @@ void instructionDecode() {
                 }
             }
         }*/
-        
+
         /////////// hazard protection ////////////
-        if ((ID_EX.memRead == true) && (ID_EX.rsShadow == ID_EX.rd || ID_EX.rtShadow == ID_EX.rd)) {
+        if ((ID_EX.memRead == true) && (ID_EX.rsShadow == ID_EX.rd || ID_EX.rdShadow == ID_EX.rd)) {
             stallPipe = true;
             if (printing) {
                 printf("Stalling\n");
             }
         }
-        
+
         if ((ID_EX.memRead == true) && (ID_EX.rdShadow == ID_EX.rd)) {
             stallPipe = true;
             if (printing) {
@@ -158,90 +158,91 @@ void instructionDecode() {
                 if (printing) {
                     printf("Stalling\n");
                 }
-            } else if ((((ID_EX.rd == ID_EX.rsShadow) && (ID_EX.rsShadow != 0)) || ((ID_EX.rd == ID_EX.rdShadow) && (ID_EX.rdShadow != 0))) && EX_MEM.memRead) {
+            } else if ((((EX_MEM.rd == ID_EX.rsShadow) && (ID_EX.rsShadow != 0)) || ((EX_MEM.rd == ID_EX.rdShadow) && (ID_EX.rdShadow != 0))) && (EX_MEM.memRead == true)) {
                 stallPipe = true;
                 if (printing) {
                     printf("Stalling\n");
                 }
-            }
-            if ((EX_MEM.rd == ID_EX.rsShadow) && (ID_EX.rsShadow != 0) && (EX_MEM.moveControl != 0)) {
-                ID_EX.rsValueShadow = EX_MEM.aluOutput;
-                if (printing) {
-                    printf("Forwarded EX_MEM.aluOutput = %d to Branch rs[%d] = %d\n", EX_MEM.aluOutput, ID_EX.rsShadow, ID_EX.rsValueShadow);
-                }
-            }
-            if ((MEM_WB.rd == ID_EX.rsShadow) && (ID_EX.rsShadow != 0) && (MEM_WB.moveControl != 0)) {
-                ID_EX.rsValueShadow = MEM_WB.aluOutput;
-                if (printing) {
-                    printf("Forwarded MEM_WB.aluOutput = %d to Branch rs[%d] = %d\n", MEM_WB.aluOutput, ID_EX.rsShadow, ID_EX.rsValueShadow);
-                }
-            }
-            if ((EX_MEM.rd == ID_EX.rdShadow) && (ID_EX.rdShadow != 0) && (EX_MEM.moveControl != 0)) {
-                ID_EX.rdValueShadow = EX_MEM.aluOutput;
-                if (printing) {
-                    printf("Forwarded EX_MEM.aluOutput = %d to Branch rd[%d] = %d\n", EX_MEM.aluOutput, ID_EX.rdShadow, ID_EX.rdValueShadow);
-                }
-            }
-            if ((MEM_WB.rd == ID_EX.rdShadow) && (ID_EX.rdShadow != 0) && (MEM_WB.moveControl != 0)) {
-                ID_EX.rdValueShadow = MEM_WB.aluOutput;
-                if (printing) {
-                    printf("Forwarded MEM_WB.aluOutput = %d to Branch rs[%d] = %d\n", MEM_WB.aluOutput, ID_EX.rdShadow, ID_EX.rdValueShadow);
-                }
-            }
-            // check whether to take branch
-            if (printing) {
-                printf("rs[%d] = %d\n", ID_EX.rsShadow, ID_EX.rsValueShadow);
-                printf("rd[%d] = %d\n", ID_EX.rdShadow, ID_EX.rdValueShadow);
-            }
-            switch (ID_EX.opcodeShadow) {
-                case 0x04: // branch on equal, if(R[rs] == R[rt]) $pc = $pc + 4 + branchAddress
-                    if ((ID_EX.rsValueShadow == ID_EX.rdValueShadow) && !stallPipe) {
-                        $pc = $pc + ID_EX.immShadow;
-                        pcBranch = true; // don't increment $pc after the jump
-                        if (printing) {
-                            printf("Branching\n");
-                        }
+            } else {
+                if ((EX_MEM.rd == ID_EX.rsShadow) && (ID_EX.rsShadow != 0) && (EX_MEM.moveControl != 0)) {
+                    ID_EX.rsValueShadow = EX_MEM.aluOutput;
+                    if (printing) {
+                        printf("Forwarded EX_MEM.aluOutput = %d to Branch rs[%d] = %d\n", EX_MEM.aluOutput, ID_EX.rsShadow, ID_EX.rsValueShadow);
                     }
-                    break;
-                case 0x05: // branch on not equal, if (R[rs] != R[rt]) $pc = $pc + 4 + branchAddress
-                    if ((ID_EX.rsValueShadow != ID_EX.rdValueShadow) && !stallPipe) {
-                        $pc = $pc + ID_EX.immShadow;
-                        pcBranch = true; // don't increment $pc after the jump
-                        if (printing) {
-                            printf("Branching\n");
-                        }
+                }
+                if ((MEM_WB.rd == ID_EX.rsShadow) && (ID_EX.rsShadow != 0) && (MEM_WB.moveControl != 0)) {
+                    ID_EX.rsValueShadow = MEM_WB.aluOutput;
+                    if (printing) {
+                        printf("Forwarded MEM_WB.aluOutput = %d to Branch rs[%d] = %d\n", MEM_WB.aluOutput, ID_EX.rsShadow, ID_EX.rsValueShadow);
                     }
-                    break;
-                case 0x06: // branch on less than or equal to zero (R[rs] <= 0) $pc = $pc + 4 + branchAddress
-                    if ((ID_EX.rsValueShadow <= 0) && !stallPipe) {
-                        $pc = $pc + ID_EX.immShadow;
-                        pcBranch = true; // don't increment $pc after the jump
-                        if (printing) {
-                            printf("Branching\n");
-                        }
+                }
+                if ((EX_MEM.rd == ID_EX.rdShadow) && (ID_EX.rdShadow != 0) && (EX_MEM.moveControl != 0)) {
+                    ID_EX.rdValueShadow = EX_MEM.aluOutput;
+                    if (printing) {
+                        printf("Forwarded EX_MEM.aluOutput = %d to Branch rd[%d] = %d\n", EX_MEM.aluOutput, ID_EX.rdShadow, ID_EX.rdValueShadow);
                     }
-                    break;
-                case 0x07: // branch on greater than zero (R[rs] > 0) $pc = $pc + 4 + branchAddress
-                    if ((ID_EX.rsValueShadow > 0) && !stallPipe) {
-                        $pc = $pc + ID_EX.immShadow;
-                        pcBranch = true; // don't increment $pc after the jump
-                        if (printing) {
-                            printf("Branching\n");
-                        }
+                }
+                if ((MEM_WB.rd == ID_EX.rdShadow) && (ID_EX.rdShadow != 0) && (MEM_WB.moveControl != 0)) {
+                    ID_EX.rdValueShadow = MEM_WB.aluOutput;
+                    if (printing) {
+                        printf("Forwarded MEM_WB.aluOutput = %d to Branch rs[%d] = %d\n", MEM_WB.aluOutput, ID_EX.rdShadow, ID_EX.rdValueShadow);
                     }
+                }
+                // check whether to take branch
+                if (printing) {
+                    printf("rs[%d] = %d\n", ID_EX.rsShadow, ID_EX.rsValueShadow);
+                    printf("rd[%d] = %d\n", ID_EX.rdShadow, ID_EX.rdValueShadow);
+                }
+                switch (ID_EX.opcodeShadow) {
+                    case 0x04: // branch on equal, if(R[rs] == R[rt]) $pc = $pc + 4 + branchAddress
+                        if ((ID_EX.rsValueShadow == ID_EX.rdValueShadow) && !stallPipe) {
+                            $pc = $pc + ID_EX.immShadow;
+                            pcBranch = true; // don't increment $pc after the jump
+                            if (printing) {
+                                printf("Branching\n");
+                            }
+                        }
+                        break;
+                    case 0x05: // branch on not equal, if (R[rs] != R[rt]) $pc = $pc + 4 + branchAddress
+                        if ((ID_EX.rsValueShadow != ID_EX.rdValueShadow) && !stallPipe) {
+                            $pc = $pc + ID_EX.immShadow;
+                            pcBranch = true; // don't increment $pc after the jump
+                            if (printing) {
+                                printf("Branching\n");
+                            }
+                        }
+                        break;
+                    case 0x06: // branch on less than or equal to zero (R[rs] <= 0) $pc = $pc + 4 + branchAddress
+                        if ((ID_EX.rsValueShadow <= 0) && !stallPipe) {
+                            $pc = $pc + ID_EX.immShadow;
+                            pcBranch = true; // don't increment $pc after the jump
+                            if (printing) {
+                                printf("Branching\n");
+                            }
+                        }
+                        break;
+                    case 0x07: // branch on greater than zero (R[rs] > 0) $pc = $pc + 4 + branchAddress
+                        if ((ID_EX.rsValueShadow > 0) && !stallPipe) {
+                            $pc = $pc + ID_EX.immShadow;
+                            pcBranch = true; // don't increment $pc after the jump
+                            if (printing) {
+                                printf("Branching\n");
+                            }
+                        }
+                }
+                // once branch is determined a noop should be inserted in its place to make sure nothing executes
+                ID_EX.opcodeShadow = 0;
+                ID_EX.rsShadow = 0;
+                ID_EX.rsValueShadow = 0;
+                ID_EX.rtShadow = 0;
+                ID_EX.rtValueShadow = 0;
+                ID_EX.rdShadow = 0;
+                ID_EX.rdValueShadow = 0;
+                ID_EX.immShadow = 0;
+                ID_EX.shamtShadow = 0;
+                ID_EX.functShadow = 0;
+                ID_EX.memReadShadow = false;
             }
-            // once branch is determined a noop should be inserted in its place to make sure nothing executes
-            ID_EX.opcodeShadow = 0;
-            ID_EX.rsShadow = 0;
-            ID_EX.rsValueShadow = 0;
-            ID_EX.rtShadow = 0;
-            ID_EX.rtValueShadow = 0;
-            ID_EX.rdShadow = 0;
-            ID_EX.rdValueShadow = 0;
-            ID_EX.immShadow = 0;
-            ID_EX.shamtShadow = 0;
-            ID_EX.functShadow = 0;
-            ID_EX.memReadShadow = false;
         }
     }
 }

@@ -15,13 +15,19 @@ void writeBack() {
 
     if (MEM_WB.moveControl == 1) {
         switch (MEM_WB.opcode) {
+            case 0x1F: // sign-extend byte
+                R[MEM_WB.rd] = MEM_WB.aluOutput;
+                if (printing) {
+                    printf("ALU Output = %d\n", MEM_WB.aluOutput);
+                    printf("R[%d] = %d\n", MEM_WB.rd, R[MEM_WB.rd]);
+                }
+                break;
             case 0x00: // R-format
                 R[MEM_WB.rd] = MEM_WB.aluOutput;
                 if (printing) {
                     printf("ALU Output = %d\n", MEM_WB.aluOutput);
                     printf("R[%d] = %d\n", MEM_WB.rd, R[MEM_WB.rd]);
                 }
-
                 break;
             case 0x08: // add immediate, R[rt] = R[rs] + imm (signed)
                 R[MEM_WB.rd] = MEM_WB.aluOutput;

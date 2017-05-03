@@ -4,12 +4,13 @@
  */
 
 #include "main.h"
+#include "memAccess.h"
 
-void memAccess(bool icache, bool read, uint32_t address) {
+void memAccess(bool icache, bool read, int address) {
 
-	uint32_t tag = address >> (CACHESIZE + BLOCKSIZE + 2);
-	uint32_t blockIndex = (address >> (BLOCKSIZE + 2)) & (CACHESIZE - 1);
-	uint32_t blockOffset = (address >> 2) & (BLOCKSIZE - 1);
+	int tag = address >> (CACHESIZE + BLOCKSIZE + 2);
+	int blockIndex = (address >> (BLOCKSIZE + 2)) & (CACHESIZE - 1);
+	int blockOffset = (address >> 2) & (BLOCKSIZE - 1);
 	//uint32_t byteOffset = address & 0b11; unnecessary for my implementation of cache
 
 	struct cache_element cashElement;

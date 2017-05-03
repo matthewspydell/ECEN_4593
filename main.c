@@ -6,6 +6,7 @@
 
 #include "executeClock.h"
 #include "loadMemory.h"
+#include "memAccess.h"
 
 int program1Memory[] = {0x00000bb8, //  $sp = 3000
     0x00000bb8, //	$fp = 3000
@@ -510,7 +511,7 @@ int program2Memory[] = {0x00000898, // $sp = 2200
     0x00000000,
     0x00000000,
     0x00000000,
-    0x80a70000, //    lb  a3,0(a1)
+    0x80a70000, //    lb      a3,0(a1)
     0x10e0001e, //    beqz    a3,4008b0 <ceasar_encrypt+0x80>
     0x24a50001, //    addiu   a1,a1,1
     0x30e200ff, //    andi    v0,a3,0xff
@@ -521,12 +522,12 @@ int program2Memory[] = {0x00000898, // $sp = 2200
     0x2443ffbf, //    addiu   v1,v0,-65
     0x00441021, //    addu    v0,v0,a0
     0x304200ff, //    andi    v0,v0,0xff
-    0x7c023c20, //    seb a3,v0
+    0x7c023c20, //    seb     a3,v0
     0x28e3007b, //    slti    v1,a3,123
     0x1460000d, //    bnez    v1,40089c <ceasar_encrypt+0x6c>
     0x2442ffe6, //    addiu   v0,v0,-26
-    0x1000000b, //    b   40089c <ceasar_encrypt+0x6c>
-    0x7c023c20, //    seb a3,v0
+    0x1000000b, //    b       40089c <ceasar_encrypt+0x6c>
+    0x7c023c20, //    seb     a3,v0
     0x306300ff, //    andi    v1,v1,0xff
     0x2c63001a, //    sltiu   v1,v1,26
     0x10600007, //    beqz    v1,40089c <ceasar_encrypt+0x6c>
@@ -792,7 +793,7 @@ int main() {
     printf("Starting $pc = %d\n", $pc);
     printf("Starting $sp = %d\n", $sp);
     printf("Starting $fp = %d\n", $fp);
- 
+
 
     // initialize pipeline to noops
     IF_ID.instruction = 0;
@@ -841,12 +842,22 @@ int main() {
     MEM_WB.aluOutput = 0;
     MEM_WB.memRead = false;
     MEM_WB.moveControl = 0;
-    /*
-    for(int i=0; i<1200; i++) {
+
+    // set cache to invalid and clean
+    for (int i = 0; i < CACHESIZE; i++) {
+        for (int j = 0; j < BLOCKSIZE; j++) {
+            icash[i][j].v = false;
+            icash[i][j].d = false;
+            dcash[i][j].v = false;
+            dcash[i][j].d = false;
+        }
+    }
+
+    for (int i = 0; i < 1200; i++) {
         printf("mainMemory[%d] = 0x%x = %d\n", i, mainMemory[i], mainMemory[i]);
     }
-     */
-    printing = false;
+
+    printing = true;
     int iteration = 1;
     // program stops when $pc reaches address zero
     while ($pc != 0) {
@@ -856,37 +867,12 @@ int main() {
             printf("R[0] = %d\n", R[0]);
         }
 
-        /*
-        if (printing) {
-            if (clockCycles % 10000 == 0){
-                printf("\n------------------------------\n$pc: %u\n", $pc);
-                printf("clock cycles = %d\n", clockCycles);
-                for (int i=0; i<1200; i++) {
-                    printf("mainMemory[%d] = 0x%x = %u\n", i, mainMemory[i], mainMemory[i]);
-                }
-                if (clockCycles == 600000) {
-
-                };
-            }
-        }*//*
-        if ($pc == 45) {
-            printf("\nIteration %d\n", iteration);
-            printf("$v0 = %d\n", R[2]);
-            printf("$v1 = %d\n", R[3]);
-            printf("$a0 = %d\n", R[4]);
-            printf("$a1 = %d\n", R[5]);
-            printf("$t0 = %d\n", R[8]);
-            printf("$t1 = %d\n", R[9]);
-            printf("$t2 = %d\n", R[10]);
-            printf("$t3 = %d\n", R[11]);
-            printf("$t4 = %d\n", R[12]);
-            printf("$t5 = %d\n", R[13]);
-            iteration++;
-        } */
-
         if ($pc == 120) {
             //printing = true;
         }
+
+        //printf("iteration: %d\n", iteration);
+        iteration++;
         executeClock();
         clockCycles++;
     }
@@ -900,5 +886,5 @@ int main() {
         printf("mainMemory[%d] = 0x%x = %u\n", i, mainMemory[i], mainMemory[i]);
     }
     return 0;
-    */
+     */
 }

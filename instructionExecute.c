@@ -224,7 +224,7 @@ void instructionExecute() {
                     printf("And Immediate Instruction\n");
                 }
                 break;
-            case 0x24: // load byte, R[rt] = MEM8(R[rs] + imm) (unsigned)
+            case 0x20: // load byte, R[rt] = MEM8(R[rs] + imm)
                 EX_MEM.aluOutputShadow = (ID_EX.rsValue + ID_EX.imm) >> 2;
                 EX_MEM.offsetShadow = (ID_EX.rsValue + ID_EX.imm) % 4;
                 EX_MEM.moveControlShadow = 1;
@@ -232,7 +232,7 @@ void instructionExecute() {
                     printf("Load Byte Instruction\n");
                 }
                 break;
-            case 0x25: // load halfword, R[rt] = MEM16(R[rs] + imm) (unsigned)
+            case 0x21: // load halfword, R[rt] = MEM16(R[rs] + imm)
                 EX_MEM.aluOutputShadow = (ID_EX.rsValue + ID_EX.imm) >> 2;
                 EX_MEM.offsetShadow = (ID_EX.rsValue + ID_EX.imm) % 2;
                 EX_MEM.moveControlShadow = 1;

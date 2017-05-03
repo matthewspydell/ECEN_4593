@@ -3,6 +3,7 @@
  */
 
 #include "memoryAccess.h"
+#include "memAccess.h"
 
 void memoryAccess() {
     if (printing) {
@@ -16,47 +17,65 @@ void memoryAccess() {
     MEM_WB.moveControlShadow = EX_MEM.moveControl; // move moveControl to next pipeline register
 
     switch (EX_MEM.opcode) {
-        case 0x24: // alu output from previous pipeline holds address location
-            // load byte (unsigned)
+        case 0x20: // alu output from previous pipeline holds address location
+            // load byte
+            if (printing) {
+                printf("Load Byte\n");
+            }
             switch (EX_MEM.offset) {
                 case 0:
-                    MEM_WB.aluOutputShadow = mainMemory[EX_MEM.aluOutput] & 0xFF000000;
+                    MEM_WB.aluOutputShadow = (mainMemory[EX_MEM.aluOutput] & 0xFF000000) >> 24;
                     break;
                 case 1:
-                    MEM_WB.aluOutputShadow = mainMemory[EX_MEM.aluOutput] & 0x00FF0000;
+                    MEM_WB.aluOutputShadow = (mainMemory[EX_MEM.aluOutput] & 0x00FF0000) >> 16;
                     break;
                 case 2:
-                    MEM_WB.aluOutputShadow = mainMemory[EX_MEM.aluOutput] & 0x0000FF00;
+                    MEM_WB.aluOutputShadow = (mainMemory[EX_MEM.aluOutput] & 0x0000FF00) >> 8;
                     break;
                 case 3:
                     MEM_WB.aluOutputShadow = mainMemory[EX_MEM.aluOutput] & 0x000000FF;
             }
             MEM_WB.rdShadow = EX_MEM.rd;
-            memAccess(false, true, EX_MEM.aluOutput);
+            //memAccess(false, true, EX_MEM.aluOutput);
+            if (printing) {
+                printf("mainMemory[%d] = 0x%x = %d\nMEM_WB.rd = %d, value = 0x%x = %d\n", EX_MEM.aluOutput, mainMemory[EX_MEM.aluOutput], mainMemory[EX_MEM.aluOutput], EX_MEM.rd, MEM_WB.aluOutputShadow, MEM_WB.aluOutputShadow);
+            }
             break;
-        case 0x25: // alu output from previous pipeline holds address location
+        case 0x21: // alu output from previous pipeline holds address location
             // load halfword (unsigned)
+            if (printing) {
+                printf("Loading Halfword\n");
+            }
             switch (EX_MEM.offset) {
                 case 0:
-                    MEM_WB.aluOutputShadow = mainMemory[EX_MEM.aluOutput] & 0x0000FFFF;
+                    MEM_WB.aluOutputShadow = (mainMemory[EX_MEM.aluOutput] & 0xFFFF0000) >> 16;
                     break;
                 case 1:
-                    MEM_WB.aluOutputShadow = mainMemory[EX_MEM.aluOutput] & 0xFFFF0000;
+                    MEM_WB.aluOutputShadow = mainMemory[EX_MEM.aluOutput] & 0x0000FFFF;
             }
             MEM_WB.rdShadow = EX_MEM.rd;
-            memAccess(false, true, EX_MEM.aluOutput);
+            //memAccess(false, true, EX_MEM.aluOutput);
+            if (printing) {
+                printf("mainMemory[%d] = 0x%x =  %d\nMEM_WB.rd = %d, value = 0x%x = %d\n", EX_MEM.aluOutput, mainMemory[EX_MEM.aluOutput], mainMemory[EX_MEM.aluOutput], EX_MEM.rd, MEM_WB.aluOutputShadow, MEM_WB.aluOutputShadow);
+            }
             break;
         case 0x23: // alu output from previous pipeline holds address location
             // load word
+            if (printing) {
+                printf("Loading Word\n");
+            }
             MEM_WB.aluOutputShadow = mainMemory[EX_MEM.aluOutput];
             MEM_WB.rdShadow = EX_MEM.rd;
-            memAccess(false, true, EX_MEM.aluOutput);
+            //memAccess(false, true, EX_MEM.aluOutput);
             if (printing) {
-                printf("Loading Word\nmainMemory[%d] = %d\nMEM_WB.rd = %d, value = %d\n", EX_MEM.aluOutput, mainMemory[EX_MEM.aluOutput], EX_MEM.rd, MEM_WB.aluOutputShadow);
+                printf("mainMemory[%d] = %d\nMEM_WB.rd = %d, value = %d\n", EX_MEM.aluOutput, mainMemory[EX_MEM.aluOutput], EX_MEM.rd, MEM_WB.aluOutputShadow);
             }
             break;
         case 0x28: // store byte, this is the end of this type of instruction
             // store byte from register rd in memory
+            if (printing) {
+                printf("Storing Byte\n");
+            }
             switch (EX_MEM.offset) {
                 case 0:
                     temp = mainMemory[EX_MEM.aluOutput] & 0x00FFFFFF;
@@ -74,10 +93,16 @@ void memoryAccess() {
                     temp = mainMemory[EX_MEM.aluOutput] & 0xFFFFFF00;
                     mainMemory[EX_MEM.aluOutput] = temp | EX_MEM.rdValue;
             }
-            memAccess(false, false, EX_MEM.aluOutput);
+            //memAccess(false, false, EX_MEM.aluOutput);
+            if (printing) {
+                printf("mainMemory[%d] = 0x%x = %d\nEX_MEM.rd = %d value = 0x%x = %d\n", EX_MEM.aluOutput, mainMemory[EX_MEM.aluOutput], mainMemory[EX_MEM.aluOutput], EX_MEM.rd, EX_MEM.rdValue, EX_MEM.rdValue);
+            }
             break;
         case 0x29: // store halfword, this is the end of this type of instruction
             // store halfword from register rd in memory
+            if (printing) {
+                printf("Storing Halford\n");
+            }
             switch (EX_MEM.offset) {
                 case 0:
                     temp = mainMemory[EX_MEM.aluOutput] & 0x0000FFFF;
@@ -87,14 +112,20 @@ void memoryAccess() {
                     temp = mainMemory[EX_MEM.aluOutput] & 0xFFFF0000;
                     mainMemory[EX_MEM.aluOutput] = temp | EX_MEM.rdValue;
             }
-            memAccess(false, false, EX_MEM.aluOutput);
+            //memAccess(false, false, EX_MEM.aluOutput);
+            if (printing) {
+                printf("mainMemory[%d] = 0x%x = %d\nEX_MEM.rd = %d value = 0x%x = %d\n", EX_MEM.aluOutput, mainMemory[EX_MEM.aluOutput], mainMemory[EX_MEM.aluOutput], EX_MEM.rd, EX_MEM.rdValue, EX_MEM.rdValue);
+            }
             break;
         case 0x2B: // store word, this is the end of this type of instruction
             // store word from register rd in memory
-            mainMemory[EX_MEM.aluOutput] = EX_MEM.rdValue;
-            memAccess(false, false, EX_MEM.aluOutput);
             if (printing) {
-                printf("Storing Word\nmainMemory[%d] = %d\nEX_MEM.rd = %d value = %d\n", EX_MEM.aluOutput, mainMemory[EX_MEM.aluOutput], EX_MEM.rd, EX_MEM.rdValue);
+                printf("Storing Word\n");
+            }
+            mainMemory[EX_MEM.aluOutput] = EX_MEM.rdValue;
+            //memAccess(false, false, EX_MEM.aluOutput);
+            if (printing) {
+                printf("mainMemory[%d] = %d\nEX_MEM.rd = %d value = %d\n", EX_MEM.aluOutput, mainMemory[EX_MEM.aluOutput], EX_MEM.rd, EX_MEM.rdValue);
             }
             break;
         default:
